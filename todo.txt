@@ -1,0 +1,360 @@
+SecureOps Lite — 2-Week Build Plan
+
+Goal: build a simple but complete cybersecurity-themed project using Angular, Spring Boot, PostgreSQL, Docker, and a Go risk-scoring service, with security shifted left from the start.
+
+[ ] Week 1 — Backend, Security, Database, and Services
+Phase 1: Project Setup and Architecture
+
+Goal: Create the project foundation and keep the architecture simple.
+
+User story: As a developer, I want a clean structure so I can build and test each part without confusion.
+
+Architecture decision: Use Spring Boot as the main backend. Angular talks only to Spring Boot. Spring Boot talks to PostgreSQL and the Go risk service.
+
+[x] Create the root project folder: secureops-lite
+[x] Create folders for frontend-angular, backend-springboot, and risk-service-go
+[x] Add README.md, project.txt, .gitignore, .env, and docker-compose.yml
+[ ] Initialize Git
+[ ] Add .env to .gitignore
+[ ] Write the basic project description in project.txt
+[ ] Define the main app flow: Angular → Spring Boot → PostgreSQL / Go service
+[ ] Define the core features: auth, assets, vulnerabilities, assignment, risk score, WAF filter
+
+[ ] Phase 2: Docker and PostgreSQL Setup
+
+Goal: Get the local environment ready early.
+
+User story: As a developer, I want the database running in Docker so the app setup is consistent.
+
+Architecture decision: Use Docker Compose from the start, but only fully containerize the app after the pieces work.
+
+[ ] Add PostgreSQL to docker-compose.yml
+[ ] Add database variables to .env
+[ ] Start PostgreSQL with Docker Compose
+[ ] Confirm the database container runs correctly
+[ ] Decide the main tables: users, assets, vulnerabilities, asset_vulnerabilities, and optional waf_events
+[ ] Plan the relationships between assets and vulnerabilities
+[ ] Add database migration support if using Flyway or Liquibase
+
+Phase 3: Spring Boot Backend Foundation
+
+Goal: Create the backend API and connect it to PostgreSQL.
+
+User story: As a developer, I want a working backend so the frontend and services can connect to one main API.
+
+Architecture decision: Organize backend by feature: auth, asset, vulnerability, risk, waf, security, and config.
+
+[ ] Create the Spring Boot project
+[ ] Add dependencies for Web, JPA, PostgreSQL, Security, and Validation
+[ ] Configure PostgreSQL connection using environment variables
+[ ] Create a public health endpoint: GET /api/health
+[ ] Add global exception handling
+[ ] Add basic CORS configuration for Angular
+[ ] Create the first backend Dockerfile, even if you do not use it fully yet
+
+Phase 4: Authentication and JWT
+
+Goal: Add secure login and registration.
+
+User story: As a user, I want to register and log in so my dashboard is protected.
+
+Architecture decision: Use JWT authentication. Keep roles out of the first version unless you finish early.
+
+[ ] Create the User entity
+[ ] Create register endpoint: POST /api/auth/register
+[ ] Create login endpoint: POST /api/auth/login
+[ ] Hash passwords with BCrypt
+[ ] Generate JWT tokens after login
+[ ] Protect private backend routes with JWT
+[ ] Return generic login errors
+[ ] Never return password hashes in API responses
+[ ] Test register and login with Postman or another API client
+
+Phase 5: Simple WAF Filter
+
+Goal: Add a basic security filter early instead of after everything is finished.
+
+User story: As a user, I want suspicious requests blocked so the API has a basic protection layer.
+
+Architecture decision: Implement the WAF as a Spring Boot filter to keep the project simple.
+
+[ ] Create a WAF/security filter
+[ ] Check request paths, query parameters, and simple input patterns
+[ ] Block obvious SQL injection-like strings
+[ ] Block obvious XSS-like strings
+[ ] Block path traversal strings like ../
+[ ] Return a safe 403 Forbidden response when blocked
+[ ] Log blocked requests to the console
+[ ] Optionally save blocked requests to a waf_events table
+[ ] Make sure normal requests are not accidentally blocked
+
+Phase 6: Asset Backend
+
+Goal: Build asset management.
+
+User story: As a user, I want to create and manage company assets so I can track systems that may have security risk.
+
+[ ] Create Asset entity
+[ ] Create asset DTOs
+[ ] Create asset repository
+[ ] Create asset service
+[ ] Create asset controller
+[ ] Add endpoints for create, read, update, and delete
+[ ] Include fields like name, type, IP address, OS, owner, criticality, risk score, and risk level
+[ ] Validate required fields
+[ ] Validate IP address format
+[ ] Protect all asset endpoints with JWT
+
+Phase 7: Vulnerability Backend
+
+Goal: Build vulnerability management.
+
+User story: As a user, I want to track vulnerabilities so I can assign them to affected assets.
+
+[ ] Create Vulnerability entity
+[ ] Create vulnerability DTOs
+[ ] Create vulnerability repository
+[ ] Create vulnerability service
+[ ] Create vulnerability controller
+[ ] Add endpoints for create, read, update, and delete
+[ ] Include fields like CVE ID, title, severity, description, and status
+[ ] Validate severity and status values
+[ ] Protect all vulnerability endpoints with JWT
+
+Phase 8: Asset-Vulnerability Assignment
+
+Goal: Connect assets and vulnerabilities.
+
+User story: As a user, I want to assign vulnerabilities to assets so I know which systems are affected.
+
+Architecture decision: Use a many-to-many relationship between assets and vulnerabilities.
+
+[ ] Create the asset_vulnerabilities relationship
+[ ] Add endpoint to assign a vulnerability to an asset
+[ ] Add endpoint to remove a vulnerability from an asset
+[ ] Add endpoint or response field to show vulnerabilities assigned to an asset
+[ ] Prevent duplicate assignments
+[ ] Return safe errors when asset or vulnerability does not exist
+[ ] Test the full backend relationship flow
+
+Phase 9: Go Risk Service
+
+Goal: Create a small Go service that calculates risk scores.
+
+User story: As a user, I want a risk score so I can prioritize the most vulnerable assets.
+
+Architecture decision: The Go service only calculates risk. It does not connect to the database.
+
+[ ] Create the Go project
+[ ] Add /health endpoint
+[ ] Add POST /calculate-risk endpoint
+[ ] Accept asset criticality and vulnerability counts
+[ ] Calculate risk score using a simple formula
+[ ] Return risk score and risk level
+[ ] Validate request values
+[ ] Add a Dockerfile for the Go service
+[ ] Test the Go service by itself
+
+Phase 10: Spring Boot to Go Integration
+
+Goal: Connect Spring Boot to the Go risk service.
+
+User story: As a user, I want to click calculate risk and have the system update the asset’s risk score.
+
+Architecture decision: Angular never calls Go directly. Spring Boot calls Go.
+
+[ ] Add POST /api/assets/{id}/calculate-risk
+[ ] In Spring Boot, count open vulnerabilities by severity
+[ ] Send the counts and asset criticality to the Go service
+[ ] Receive the risk score and risk level from Go
+[ ] Save the result on the asset in PostgreSQL
+[ ] Return the updated asset to the frontend
+[ ] Handle Go service errors safely
+
+Week 2 — Frontend, Integration, Docker, and Polish
+Phase 11: Angular Foundation
+
+Goal: Create the frontend app structure.
+
+User story: As a user, I want a clean interface so I can use the cybersecurity dashboard easily.
+
+Architecture decision: Use Angular services for API calls, guards for protected pages, and components for each feature.
+
+[ ] Create the Angular project
+[ ] Add routing
+[ ] Create layout/navigation
+[ ] Create pages for login, register, dashboard, assets, asset details, and vulnerabilities
+[ ] Create shared interfaces/models
+[ ] Create environment variable for backend API URL
+[ ] Create Angular services for auth, assets, vulnerabilities, and dashboard
+[ ] Add basic styling
+
+Phase 12: Angular Authentication
+
+Goal: Connect login and register to the backend.
+
+User story: As a user, I want to register and log in from the browser.
+
+[ ] Build register form
+[ ] Build login form
+[ ] Connect forms to Spring Boot auth endpoints
+[ ] Store JWT after login
+[ ] Add HTTP interceptor to attach JWT to requests
+[ ] Add route guard for protected pages
+[ ] Add logout button
+[ ] Redirect logged-out users to login
+[ ] Show safe error messages
+
+Phase 13: Angular Asset Screens
+
+Goal: Build the asset UI.
+
+User story: As a user, I want to create, view, edit, and delete assets from the dashboard.
+
+[ ] Build asset list page
+[ ] Build create asset form
+[ ] Build edit asset form
+[ ] Build asset details page
+[ ] Connect asset pages to backend endpoints
+[ ] Display risk score and risk level
+[ ] Add search or simple filtering
+[ ] Add delete confirmation
+[ ] Validate forms on the frontend
+
+Phase 14: Angular Vulnerability Screens
+
+Goal: Build the vulnerability UI.
+
+User story: As a user, I want to manage vulnerabilities from the frontend.
+
+[ ] Build vulnerability list page
+[ ] Build create vulnerability form
+[ ] Build edit vulnerability form
+[ ] Connect vulnerability pages to backend endpoints
+[ ] Add filters for severity and status
+[ ] Add delete confirmation
+[ ] Validate forms on the frontend
+
+Phase 15: Assignment and Risk Flow in Angular
+
+Goal: Finish the main cybersecurity workflow.
+
+User story: As a user, I want to assign vulnerabilities to assets and calculate risk from the asset details page.
+
+[ ] Show assigned vulnerabilities on the asset details page
+[ ] Add a dropdown or modal to assign vulnerabilities
+[ ] Add remove button for assigned vulnerabilities
+[ ] Add calculate risk button
+[ ] Call the Spring Boot risk endpoint
+[ ] Refresh the asset details after calculating risk
+[ ] Show loading and error states
+[ ] Confirm the score persists after page refresh
+
+Phase 16: Dashboard Summary
+
+Goal: Add a simple dashboard overview.
+
+User story: As a user, I want a quick summary of security risk across my assets.
+
+[ ] Show total assets
+[ ] Show total vulnerabilities
+[ ] Show open vulnerabilities
+[ ] Show critical vulnerabilities
+[ ] Show high-risk or critical-risk assets
+[ ] Show average risk score
+[ ] Add a simple backend summary endpoint if needed
+[ ] Keep the dashboard simple with cards and a small table
+
+Phase 17: Full Docker Compose Integration
+
+Goal: Run everything with one command.
+
+User story: As a developer, I want the full application to run with Docker Compose so setup is simple.
+
+Architecture decision: Use Docker internal networking. Angular calls Spring Boot. Spring Boot calls PostgreSQL and Go.
+
+[ ] Add frontend service to Docker Compose
+[ ] Add backend service to Docker Compose
+[ ] Add risk-service to Docker Compose
+[ ] Confirm PostgreSQL service works with backend
+[ ] Confirm backend can call Go service by service name
+[ ] Confirm Angular can call backend
+[ ] Run the full app with docker compose up --build
+[ ] Fix environment variable and networking issues
+
+Phase 18: Security Review and Hardening
+
+Goal: Review the app with a security-first mindset.
+
+User story: As a developer, I want to make sure the project follows secure coding basics before I call it complete.
+
+[ ] Confirm passwords are hashed
+[ ] Confirm private routes require JWT
+[ ] Confirm Angular protected routes work
+[ ] Confirm backend validates all important fields
+[ ] Confirm WAF blocks obvious suspicious input
+[ ] Confirm WAF does not log passwords
+[ ] Confirm CORS is not wide open forever
+[ ] Confirm .env is not committed
+[ ] Confirm JWT secret is not hardcoded
+[ ] Confirm API errors do not expose stack traces
+[ ] Confirm frontend does not calculate or fake risk scores
+[ ] Confirm Go service is not directly used by Angular
+
+Phase 19: Testing and Cleanup
+
+Goal: Make sure the project works end to end.
+
+User story: As a developer, I want confidence that the full app works before showing it in a portfolio or internship conversation.
+
+[ ] Register a user
+[ ] Log in
+[ ] Create an asset
+[ ] Create a vulnerability
+[ ] Assign vulnerability to asset
+[ ] Calculate risk
+[ ] Edit asset
+[ ] Edit vulnerability
+[ ] Remove vulnerability from asset
+[ ] Delete asset
+[ ] Delete vulnerability
+[ ] Test WAF with suspicious input
+[ ] Test logout
+[ ] Test protected pages while logged out
+[ ] Remove debug logs
+[ ] Clean up unused files
+[ ] Make final Git commits
+
+Phase 20: Documentation and Portfolio Polish
+
+Goal: Make the project easy to understand and explain.
+
+User story: As a developer, I want documentation so I can show what I built and why it matters.
+
+[ ] Update README.md
+[ ] Add project description
+[ ] Add architecture overview
+[ ] Add tech stack
+[ ] Add security features
+[ ] Add Docker setup instructions
+[ ] Add API endpoint summary
+[ ] Add screenshots if available
+[ ] Add future improvements
+[ ] Add a short portfolio explanation
+
+Final Definition of Done
+
+[ ] User can register and log in
+[ ] JWT protects private backend routes
+[ ] Angular guards protect private frontend pages
+[ ] User can manage assets
+[ ] User can manage vulnerabilities
+[ ] User can assign vulnerabilities to assets
+[ ] User can calculate asset risk
+[ ] Spring Boot calls the Go risk service
+[ ] PostgreSQL stores the data
+[ ] WAF blocks suspicious input
+[ ] Docker Compose runs the full app
+[ ] Security basics are documented
+[ ] README explains how to run the project
+[ ] Project can be completed in about two focused weeks
