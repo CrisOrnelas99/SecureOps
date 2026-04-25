@@ -2,7 +2,7 @@ SecureOps Lite — 2-Week Build Plan
 
 Goal: build a simple but complete cybersecurity-themed project using Angular, Spring Boot, PostgreSQL, Docker, and a Go risk-scoring service, with security shifted left from the start.
 
-[ ] Week 1 — Backend, Security, Database, and Services
+[x] Week 1 — Backend, Security, Database, and Services
 Phase 1: Project Setup and Architecture
 
 Goal: Create the project foundation and keep the architecture simple.
@@ -14,11 +14,11 @@ Architecture decision: Use Spring Boot as the main backend. Angular talks only t
 [x] Create the root project folder: secureops-lite
 [x] Create folders for frontend-angular, backend-springboot, and risk-service-go
 [x] Add README.md, project.txt, .gitignore, .env, and docker-compose.yml
-[ ] Initialize Git
-[ ] Add .env to .gitignore
-[ ] Write the basic project description in project.txt
-[ ] Define the main app flow: Angular → Spring Boot → PostgreSQL / Go service
-[ ] Define the core features: auth, assets, vulnerabilities, assignment, risk score, WAF filter
+[x] Initialize Git
+[x] Add .env to .gitignore
+[x] Write the basic project description in README.md
+[x] Define the main app flow: Angular → Spring Boot → PostgreSQL / Go service
+[x] Define the core features: auth, assets, vulnerabilities, assignment, risk score, WAF filter
 
 [ ] Phase 2: Docker and PostgreSQL Setup
 
@@ -28,15 +28,15 @@ User story: As a developer, I want the database running in Docker so the app set
 
 Architecture decision: Use Docker Compose from the start, but only fully containerize the app after the pieces work.
 
-[ ] Add PostgreSQL to docker-compose.yml
-[ ] Add database variables to .env
-[ ] Start PostgreSQL with Docker Compose
-[ ] Confirm the database container runs correctly
-[ ] Decide the main tables: users, assets, vulnerabilities, asset_vulnerabilities, and optional waf_events
-[ ] Plan the relationships between assets and vulnerabilities
+[x] Add PostgreSQL to docker-compose.yml
+[x] Add database variables to .env
+[x] Start PostgreSQL with Docker Compose
+[x] Confirm the database container runs correctly
+[x] Decide the main tables: users, assets, vulnerabilities, asset_vulnerabilities, and optional waf_events
+[x] Plan the relationships between assets and vulnerabilities
 [ ] Add database migration support if using Flyway or Liquibase
 
-Phase 3: Spring Boot Backend Foundation
+[x]Phase 3: Spring Boot Backend Foundation
 
 Goal: Create the backend API and connect it to PostgreSQL.
 
@@ -44,13 +44,14 @@ User story: As a developer, I want a working backend so the frontend and service
 
 Architecture decision: Organize backend by feature: auth, asset, vulnerability, risk, waf, security, and config.
 
-[ ] Create the Spring Boot project
-[ ] Add dependencies for Web, JPA, PostgreSQL, Security, and Validation
-[ ] Configure PostgreSQL connection using environment variables
-[ ] Create a public health endpoint: GET /api/health
-[ ] Add global exception handling
-[ ] Add basic CORS configuration for Angular
-[ ] Create the first backend Dockerfile, even if you do not use it fully yet
+[x] Create the Spring Boot project
+[x] Add dependencies for Web, JPA, PostgreSQL, Security, and Validation
+[x] Configure PostgreSQL connection using environment variables
+[x] Create a public health endpoint: GET /api/health
+[x] Add basic Spring Security config to allow /api/health and protect other routes by default
+[x] Add global exception handling
+[x] Add basic CORS configuration for Angular
+[x] Create the first backend Dockerfile, even if you do not use it fully yet
 
 Phase 4: Authentication and JWT
 

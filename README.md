@@ -385,6 +385,64 @@ Relationship goals:
 - One asset can have many vulnerabilities
 - One vulnerability can belong to many assets
 
+### Phase 2 Schema Plan
+
+`users` stores application accounts for authentication.
+
+- `id`
+- `username`
+- `email`
+- `password_hash`
+- `created_at`
+
+Security rules:
+
+- `username` should be unique
+- `email` should be unique
+- store only `password_hash`, never plain-text passwords
+
+`assets` stores company systems or devices being tracked for security risk.
+
+- `id`
+- `name`
+- `type`
+- `ip_address`
+- `os`
+- `owner`
+- `criticality`
+- `risk_score`
+- `risk_level`
+- `created_at`
+
+`vulnerabilities` stores security findings that may affect assets.
+
+- `id`
+- `cve_id`
+- `title`
+- `severity`
+- `description`
+- `status`
+- `created_at`
+
+Data integrity rules:
+
+- `cve_id` should be unique when present
+- `severity`, `status`, and `criticality` should be controlled values validated in the backend
+
+`asset_vulnerabilities` is the join table between assets and vulnerabilities.
+
+- `asset_id`
+- `vulnerability_id`
+- `assigned_at`
+
+Relationship rules:
+
+- one asset can have many vulnerabilities
+- one vulnerability can affect many assets
+- `asset_id` should be a foreign key to `assets.id`
+- `vulnerability_id` should be a foreign key to `vulnerabilities.id`
+- `asset_id` + `vulnerability_id` should be unique together to prevent duplicate assignments
+
 ## API Design
 
 ### Authentication
@@ -446,6 +504,7 @@ Main skills practiced:
 Spring Boot is the main backend API and should handle:
 
 - Authentication
+- Basic Spring Security configuration
 - JWT validation
 - Asset CRUD
 - Vulnerability CRUD
