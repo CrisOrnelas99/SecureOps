@@ -61,10 +61,10 @@ User story: As a user, I want to register and log in so my dashboard is protecte
 
 Architecture decision: Use JWT authentication. Keep roles out of the first version unless you finish early.
 
-[ ] Create the User entity
-[ ] Create register endpoint: POST /api/auth/register
+[x] Create the User entity and repository
+[x] Create register endpoint: POST /api/auth/register
 [ ] Create login endpoint: POST /api/auth/login
-[ ] Hash passwords with BCrypt
+[x] Hash passwords with BCrypt
 [ ] Generate JWT tokens after login
 [ ] Protect private backend routes with JWT
 [ ] Return generic login errors

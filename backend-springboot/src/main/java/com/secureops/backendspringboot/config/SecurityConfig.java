@@ -17,7 +17,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())   //turns off CSRF protection
                 .cors(Customizer.withDefaults())    //tells spring security to use your cors config
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/health").permitAll() //makes the health route public
+                        .requestMatchers("/api/health", "/api/auth/register").permitAll() //for test purposes
                         .anyRequest().authenticated()   //keeps the backedn secure by default
                 )
                 .httpBasic(Customizer.withDefaults());  //enables basic HTTP authentication for now
