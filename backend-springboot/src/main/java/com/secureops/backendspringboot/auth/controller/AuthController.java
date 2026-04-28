@@ -1,7 +1,9 @@
 package com.secureops.backendspringboot.auth.controller;
 
 import com.secureops.backendspringboot.auth.dto.RegisterRequest;
+import com.secureops.backendspringboot.auth.dto.LoginRequest;
 import com.secureops.backendspringboot.auth.service.AuthService;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +20,15 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<String> register( @Valid @RequestBody RegisterRequest request) {
         authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body("User registered.");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request ){
+        authService.login(request);
+        return ResponseEntity.status(HttpStatus.OK).body("User logged in.");
+
     }
 }
