@@ -63,13 +63,19 @@ Architecture decision: Use JWT authentication. Keep roles out of the first versi
 
 [x] Create the User entity and repository
 [x] Create register endpoint: POST /api/auth/register
-[ ] Create login endpoint: POST /api/auth/login
+[x] Create login endpoint: POST /api/auth/login
 [x] Hash passwords with BCrypt
-[ ] Generate JWT tokens after login
+[x] Test register and login with Postman or another API client
+[x] Add JWT secret and expiration config through environment variables
+[x] Generate JWT tokens after login
+[x] Return token in a login response DTO
+[ ] Create JWT utility/service for token generation and validation
+[ ] Add JWT authentication filter to read Bearer tokens
+[ ] Configure Spring Security for stateless JWT authentication
 [ ] Protect private backend routes with JWT
 [ ] Return generic login errors
 [ ] Never return password hashes in API responses
-[ ] Test register and login with Postman or another API client
+[ ] Test protected endpoints with and without a JWT
 
 Phase 5: Simple WAF Filter
 

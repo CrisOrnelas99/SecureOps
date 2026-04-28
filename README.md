@@ -1,46 +1,24 @@
 # SecureOps Lite
 
-Cyber Asset Risk Tracker for practicing secure full-stack engineering.
+SecureOps Lite is a security-focused full-stack application for tracking assets, managing vulnerabilities, and calculating risk across an environment.
 
-## Project Summary
+The project is currently being built. This repository represents the direction of the application, the architecture behind it, and the feature set it is intended to support as development continues.
 
-SecureOps Lite is a cybersecurity-themed full-stack application for tracking assets, assigning vulnerabilities, calculating risk, and viewing security status from a simple dashboard.
+## Project Overview
 
-This project is intentionally internship-sized:
+The goal is to bring a few related security workflows into one system:
 
-- Big enough to demonstrate real backend, frontend, database, container, and security skills
-- Small enough to finish, explain, demo, and defend in an interview
+- Track assets such as servers, workstations, firewalls, routers, databases, and cloud services
+- Record vulnerabilities and their severity
+- Assign vulnerabilities to assets
+- Calculate a risk score based on vulnerability data and asset criticality
+- Show the overall security picture through a dashboard
 
-## Why This Project Matters
-
-This project gives you hands-on practice with:
-
-- Angular
-- Spring Boot
-- PostgreSQL
-- Docker
-- Go microservices
-- Secure API design
-- Basic WAF and backend request filtering concepts
-
-It is not meant to be an enterprise SIEM or vulnerability scanner. It is a realistic learning project that shows you understand secure backend systems and how services connect.
+This is not meant to be a full enterprise SIEM or scanner. The focus is a clean, practical application that shows how asset data, vulnerability data, authentication, and service-to-service communication fit together.
 
 ## Core Idea
 
-Users log in and manage cybersecurity assets such as:
-
-- Servers
-- Workstations
-- Firewalls
-- Routers
-- Cameras
-- Databases
-- Cloud services
-
-Each asset can have vulnerabilities assigned to it. The system calculates a risk score based on:
-
-- Vulnerability severity
-- Asset criticality
+Each asset in the system carries operational details and a security context. Vulnerabilities can be linked to assets, and those relationships feed into a risk score that helps identify what needs attention first.
 
 Example asset:
 
@@ -69,43 +47,25 @@ Spring Boot API
     +--> Go risk-scoring service
 ```
 
-Optional later addition:
-
-- Lightweight WAF-style request filter or gateway
+The backend handles authentication, validation, API logic, and persistence. PostgreSQL stores the application data. The Go service is intended to handle isolated risk calculations, and the Angular frontend provides the user interface.
 
 ## Main Features
 
-### 1. Authentication
+### Authentication
 
-Users should be able to:
+The application is designed to support:
 
-- Register
-- Log in
-- Log out
-- Access protected dashboard pages
-
-Security expectations:
-
+- User registration
+- User login
 - JWT-based authentication
-- Password hashing
 - Protected backend endpoints
-- Protected Angular routes
+- Protected frontend routes
 
-Initial scope:
+Initial access can stay simple, with room to expand later into separate roles such as admin, analyst, or viewer.
 
-- One authenticated user type is enough
+### Dashboard
 
-Later optional roles:
-
-- Admin
-- Analyst
-- Viewer
-
-### 2. Dashboard
-
-The dashboard gives a quick security overview.
-
-Example dashboard widgets:
+The dashboard is intended to give a quick view of the environment, including:
 
 - Total assets
 - Total vulnerabilities
@@ -123,9 +83,9 @@ Critical Assets: 3
 Average Risk Score: 64
 ```
 
-### 3. Asset Inventory
+### Asset Inventory
 
-Each asset should include:
+Each asset is intended to include:
 
 - Asset ID
 - Asset name
@@ -139,31 +99,18 @@ Each asset should include:
 - Created date
 - Updated date
 
-Allowed criticality values:
+The system is being built to support:
 
-- Low
-- Medium
-- High
+- Creating assets
+- Viewing all assets
+- Viewing a single asset
+- Updating assets
+- Deleting assets
+- Searching and filtering assets
 
-Allowed risk levels:
+### Vulnerability Tracking
 
-- Low
-- Medium
-- High
-- Critical
-
-Users should be able to:
-
-- Create assets
-- View all assets
-- View one asset
-- Update assets
-- Delete assets
-- Search and filter assets
-
-### 4. Vulnerability Tracker
-
-Each vulnerability should include:
+Each vulnerability entry is intended to include:
 
 - Vulnerability ID
 - CVE ID
@@ -174,33 +121,21 @@ Each vulnerability should include:
 - Created date
 - Updated date
 
-Allowed severity values:
+The application is meant to support:
 
-- Low
-- Medium
-- High
-- Critical
+- Creating vulnerabilities
+- Viewing all vulnerabilities
+- Viewing a single vulnerability
+- Updating vulnerabilities
+- Deleting vulnerabilities
+- Filtering by severity
+- Filtering by status
 
-Allowed status values:
+The data can be entered manually or seeded with mock records. The project is focused on managing and connecting the data, not on performing live scanning.
 
-- Open
-- Fixed
+### Asset-to-Vulnerability Assignment
 
-Users should be able to:
-
-- Create vulnerabilities
-- View all vulnerabilities
-- View one vulnerability
-- Update vulnerabilities
-- Delete vulnerabilities
-- Filter by severity
-- Filter by status
-
-The entries can be manual or mock data. Real scanning is not required for this project.
-
-### 5. Asset-to-Vulnerability Assignment
-
-The system should support many-to-many relationships:
+The data model is built around a many-to-many relationship:
 
 - One asset can have many vulnerabilities
 - One vulnerability can affect many assets
@@ -214,11 +149,9 @@ Server-01
 - CVE-2024-88888 | Medium | Fixed
 ```
 
-This is a good practice area for relational database design in PostgreSQL.
+### Asset Details View
 
-### 6. Asset Details Page
-
-Each asset details page should show:
+An asset details page is intended to show:
 
 - Asset name
 - Asset type
@@ -230,32 +163,16 @@ Each asset details page should show:
 - Current risk level
 - Assigned vulnerabilities
 
-Actions:
-
-- Assign vulnerability
-- Remove vulnerability
-- Calculate risk
-
-This page connects the frontend, backend, database, and Go service.
+It should also support actions such as assigning vulnerabilities, removing vulnerabilities, and recalculating risk.
 
 ## Risk Scoring Service
 
 The project includes a separate Go service for risk scoring.
 
-Responsibility:
+Its responsibility is straightforward:
 
-- Accept summarized vulnerability data
+- Accept summarized vulnerability data for an asset
 - Return a risk score and risk level
-
-Spring Boot flow:
-
-1. Angular user clicks `Calculate Risk`
-2. Spring Boot receives the request
-3. Spring Boot counts vulnerabilities for the asset
-4. Spring Boot sends the data to the Go service
-5. Go calculates the result
-6. Spring Boot stores the score in PostgreSQL
-7. Angular displays the updated result
 
 Example request:
 
@@ -304,78 +221,31 @@ Risk levels:
 - 51-75 = High
 - 76-100 = Critical
 
-## Basic WAF Concept
+## Security Direction
 
-The project can include a lightweight WAF-style security layer.
+The application is being built with a few security fundamentals in mind:
 
-The goal is not a full enterprise WAF. The goal is to demonstrate secure backend request filtering and logging.
+- Password hashing
+- JWT authentication
+- Protected routes
+- Input validation
+- Safe error handling
+- Environment-based configuration
+- Database constraints
+- Parameterized data access
 
-Simple implementation options:
-
-- Spring Boot security filter
-- Separate lightweight Go gateway service
-
-Recommended starting point:
-
-- Spring Boot request filter
-
-Responsibilities:
-
-- Inspect incoming API requests
-- Block obviously suspicious patterns
-- Log blocked attempts
-
-Examples of patterns to detect:
-
-- SQL injection-like payloads
-- XSS-like payloads
-- Command injection characters
-- Path traversal attempts
-- Unusually long request values
-- Invalid or missing content types
-- Excessive repeated requests from one IP
-
-Examples:
-
-```text
-' OR '1'='1
-DROP TABLE
-<script>
-../
-; rm -rf
-UNION SELECT
-```
-
-Example block response:
-
-```json
-{
-  "error": "Request blocked by WAF",
-  "reason": "Suspicious input detected"
-}
-```
-
-Blocked request logging should capture:
-
-- Timestamp
-- IP address
-- HTTP method
-- Endpoint
-- Reason blocked
-- Request path
-
-Initial implementation can log to the backend console. Later, logs can be stored in a `waf_events` table.
+There is also room for a lightweight request-filtering layer to catch obviously suspicious input and log blocked requests, but the main priority is getting the core application structure right first.
 
 ## Data Model
 
-Main tables:
+The main tables are intended to be:
 
 - `users`
 - `assets`
 - `vulnerabilities`
 - `asset_vulnerabilities`
 
-Optional table:
+An optional later addition:
 
 - `waf_events`
 
@@ -385,65 +255,9 @@ Relationship goals:
 - One asset can have many vulnerabilities
 - One vulnerability can belong to many assets
 
-### Phase 2 Schema Plan
-
-`users` stores application accounts for authentication.
-
-- `id`
-- `username`
-- `email`
-- `password_hash`
-- `created_at`
-
-Security rules:
-
-- `username` should be unique
-- `email` should be unique
-- store only `password_hash`, never plain-text passwords
-
-`assets` stores company systems or devices being tracked for security risk.
-
-- `id`
-- `name`
-- `type`
-- `ip_address`
-- `os`
-- `owner`
-- `criticality`
-- `risk_score`
-- `risk_level`
-- `created_at`
-
-`vulnerabilities` stores security findings that may affect assets.
-
-- `id`
-- `cve_id`
-- `title`
-- `severity`
-- `description`
-- `status`
-- `created_at`
-
-Data integrity rules:
-
-- `cve_id` should be unique when present
-- `severity`, `status`, and `criticality` should be controlled values validated in the backend
-
-`asset_vulnerabilities` is the join table between assets and vulnerabilities.
-
-- `asset_id`
-- `vulnerability_id`
-- `assigned_at`
-
-Relationship rules:
-
-- one asset can have many vulnerabilities
-- one vulnerability can affect many assets
-- `asset_id` should be a foreign key to `assets.id`
-- `vulnerability_id` should be a foreign key to `vulnerabilities.id`
-- `asset_id` + `vulnerability_id` should be unique together to prevent duplicate assignments
-
 ## API Design
+
+The API is being structured around these core routes.
 
 ### Authentication
 
@@ -469,16 +283,11 @@ Relationship rules:
 - `PUT /api/vulnerabilities/{id}`
 - `DELETE /api/vulnerabilities/{id}`
 
-### Optional WAF Events
-
-- `GET /api/waf-events`
-- `GET /api/waf-events/{id}`
-
 ## Technology Roles
 
 ### Angular
 
-Angular is the frontend and should include:
+Angular is intended to provide:
 
 - Login page
 - Register page
@@ -487,64 +296,37 @@ Angular is the frontend and should include:
 - Asset details page
 - Vulnerabilities page
 
-Main skills practiced:
-
-- Components
-- Routing
-- Forms
-- Validation
-- HTTP requests
-- Services
-- Route guards
-- Token handling
-- Tables and filtering
-
 ### Spring Boot
 
-Spring Boot is the main backend API and should handle:
+Spring Boot is the main backend API and is intended to handle:
 
 - Authentication
-- Basic Spring Security configuration
+- Spring Security configuration
 - JWT validation
 - Asset CRUD
 - Vulnerability CRUD
 - Asset-vulnerability assignment
 - Go service integration
 - PostgreSQL persistence
-- Basic WAF request filtering
 - Input validation
 - Error handling
 
-Recommended backend structure:
-
-- Controllers
-- Services
-- Repositories
-- Entities
-- DTOs
-- Security classes
-- Configuration classes
-- Exception handlers
-
 ### PostgreSQL
 
-PostgreSQL stores application data and gives practice with:
+PostgreSQL stores the application data and supports:
 
-- Tables
-- Primary keys
+- Relational data modeling
 - Foreign keys
 - Many-to-many relationships
-- Indexes
-- SQL queries
-- Migrations
+- Querying and filtering
 
 ### Go Service
 
-The Go service should expose:
+The Go service is intended to expose:
 
 - `POST /calculate-risk`
 
-Its role is intentionally narrow:
+Its role is narrow by design:
 
 - Parse JSON
 - Validate input
@@ -553,20 +335,9 @@ Its role is intentionally narrow:
 
 ### Docker
 
-Use Docker Compose to run the project locally.
+Docker Compose is used to run the project locally.
 
-Containers:
-
-- Angular frontend
-- Spring Boot backend
-- PostgreSQL database
-- Go risk service
-
-Optional:
-
-- pgAdmin
-
-Planned structure:
+Repository structure:
 
 ```text
 secureops-lite/
@@ -584,60 +355,18 @@ Run target:
 docker compose up --build
 ```
 
-## Security Goals
+## Current Build Status
 
-This project should demonstrate these security fundamentals:
+This repository is actively being built out toward the architecture and feature set above. Some pieces are already in place, and others are still being added.
 
-- Password hashing
-- JWT authentication
-- Protected backend routes
-- Protected frontend routes
-- Input validation
-- Basic WAF filtering
-- Blocked request logging
-- Safe error messages
-- CORS configuration
-- Environment variables for secrets
-- Database constraints
-- Parameterized data access through JPA
-- Basic rate-limiting concepts
+At the moment, the codebase includes:
 
-Secure defaults:
-
-- Never store plain-text passwords
-- Never hardcode JWT secrets
-- Never trust frontend validation alone
-- Validate on the backend
-- Use DTOs instead of exposing entities directly
-- Use environment variables for credentials
-- Return safe error messages instead of stack traces
-- Prefer Docker internal networking over exposing every service publicly
-
-## Resume Value
-
-If built well, this project can demonstrate:
-
-- Secure full-stack development
-- API and database design
-- Service-to-service communication
-- Dockerized local environments
-- Authentication and authorization fundamentals
-- Defensive backend engineering
-- Cybersecurity-focused system design
-
-## Current State
-
-Right now this repository is a planning and architecture foundation.
-
-The next build stages are likely:
-
-1. Scaffold the project structure
-2. Stand up PostgreSQL and Spring Boot
-3. Add authentication and secured API endpoints
-4. Add Angular pages and API integration
-5. Add Go risk service
-6. Add WAF filtering and security logging
+- A Spring Boot backend
+- Authentication endpoints
+- PostgreSQL configuration through Docker Compose
+- Repository structure for the frontend and Go service
 
 ## Notes
 
-Keep the project focused. A secure, clean, explainable implementation is more valuable than adding too many features.
+- The backend currently uses `spring.jpa.hibernate.ddl-auto=update`, which is convenient for development but should be replaced with managed migrations before production use.
+- Secrets in `.env` should be treated as local development values, not production credentials.
