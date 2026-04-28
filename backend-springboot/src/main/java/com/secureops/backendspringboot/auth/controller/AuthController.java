@@ -2,6 +2,7 @@ package com.secureops.backendspringboot.auth.controller;
 
 import com.secureops.backendspringboot.auth.dto.RegisterRequest;
 import com.secureops.backendspringboot.auth.dto.LoginRequest;
+import com.secureops.backendspringboot.auth.dto.LoginResponse;
 import com.secureops.backendspringboot.auth.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -25,10 +26,11 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body("User registered.");
     }
 
+    //Verifies the login request and returns a JWT token for future authenticated requests
     @PostMapping("/login")
-    public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request ){
-        authService.login(request);
-        return ResponseEntity.status(HttpStatus.OK).body("User logged in.");
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request ){
+        String token = authService.login(request);
+        return ResponseEntity.ok(new LoginResponse(token, "Bearer"));
 
     }
 }

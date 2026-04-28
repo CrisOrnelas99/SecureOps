@@ -4,6 +4,7 @@ import com.secureops.backendspringboot.auth.dto.RegisterRequest;
 import com.secureops.backendspringboot.auth.dto.LoginRequest;
 import com.secureops.backendspringboot.auth.entity.User;
 import com.secureops.backendspringboot.auth.repository.UserRepository;
+import com.secureops.backendspringboot.security.JwtService;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,19 +14,21 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     public void register(RegisterRequest request) {
 
         if (userRepository.existsByUsername(request.getUsername()))
-            throw new BadCredentialsException("Username is already taken.");
+            throw new IllegalArgumentException("Username is already taken.");
 
         if (userRepository.existsByEmail(request.getEmail()))
-            throw new BadCredentialsException("Email is already in use.");
+            throw new IllegalArgumentException("Email is already in use.");
 
         User user = new User();
         user.setUsername(request.getUsername());
@@ -36,7 +39,7 @@ public class AuthService {
     }
 
 
-    public void login(LoginRequest request) {
+    public String login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUserOrEmail())
                 .or(() -> userRepository.findByEmail(request.getUserOrEmail()))
                 .orElseThrow(() -> new BadCredentialsException("Invalid credentials."));
@@ -44,6 +47,8 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new BadCredentialsException("Invalid credentials.");
         }
+
+        return jwtService.generateToken(user.getUsername());
     }
 
 
