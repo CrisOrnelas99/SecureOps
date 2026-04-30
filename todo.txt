@@ -34,7 +34,6 @@ Architecture decision: Use Docker Compose from the start, but only fully contain
 [x] Confirm the database container runs correctly
 [x] Decide the main tables: users, assets, vulnerabilities, asset_vulnerabilities, and optional waf_events
 [x] Plan the relationships between assets and vulnerabilities
-[ ] Add database migration support if using Flyway or Liquibase
 
 [x]Phase 3: Spring Boot Backend Foundation
 
@@ -85,15 +84,15 @@ User story: As a user, I want suspicious requests blocked so the API has a basic
 
 Architecture decision: Implement the WAF as a Spring Boot filter to keep the project simple.
 
-[ ] Create a WAF/security filter
-[ ] Check request paths, query parameters, and simple input patterns
-[ ] Block obvious SQL injection-like strings
-[ ] Block obvious XSS-like strings
-[ ] Block path traversal strings like ../
-[ ] Return a safe 403 Forbidden response when blocked
-[ ] Log blocked requests to the console
-[ ] Optionally save blocked requests to a waf_events table
-[ ] Make sure normal requests are not accidentally blocked
+[x] Create a WAF/security filter
+[x] Check request paths, query parameters, and simple input patterns
+[x] Block obvious SQL injection-like strings
+[x] Block obvious XSS-like strings
+[x] Block path traversal strings like ../
+[x] Return a safe 403 Forbidden response when blocked
+[x] Log blocked requests to the console
+[x] Optionally save blocked requests to a waf_events table
+[x] Make sure normal requests are not accidentally blocked
 
 Phase 6: Asset Backend
 
