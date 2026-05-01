@@ -100,15 +100,15 @@ Goal: Build asset management.
 
 User story: As a user, I want to create and manage company assets so I can track systems that may have security risk.
 
-[ ] Create Asset entity
-[ ] Create asset DTOs
-[ ] Create asset repository
+[x] Create Asset entity
+[x] Create asset DTOs
+[x] Create asset repository
 [ ] Create asset service
 [ ] Create asset controller
 [ ] Add endpoints for create, read, update, and delete
-[ ] Include fields like name, type, IP address, OS, owner, criticality, risk score, and risk level
-[ ] Validate required fields
-[ ] Validate IP address format
+[x] Include fields like name, type, IP address, OS, owner, criticality, risk score, and risk level
+[x] Validate required fields
+[x] Validate IP address format
 [ ] Protect all asset endpoints with JWT
 
 Phase 7: Vulnerability Backend
