@@ -103,13 +103,13 @@ User story: As a user, I want to create and manage company assets so I can track
 [x] Create Asset entity
 [x] Create asset DTOs
 [x] Create asset repository
-[ ] Create asset service
-[ ] Create asset controller
-[ ] Add endpoints for create, read, update, and delete
+[x] Create asset service
+[x] Create asset controller
+[x] Add endpoints for create, read, update, and delete
 [x] Include fields like name, type, IP address, OS, owner, criticality, risk score, and risk level
 [x] Validate required fields
 [x] Validate IP address format
-[ ] Protect all asset endpoints with JWT
+[x] Protect all asset endpoints with JWT
 
 Phase 7: Vulnerability Backend
 
@@ -117,15 +117,15 @@ Goal: Build vulnerability management.
 
 User story: As a user, I want to track vulnerabilities so I can assign them to affected assets.
 
-[ ] Create Vulnerability entity
-[ ] Create vulnerability DTOs
-[ ] Create vulnerability repository
-[ ] Create vulnerability service
-[ ] Create vulnerability controller
-[ ] Add endpoints for create, read, update, and delete
-[ ] Include fields like CVE ID, title, severity, description, and status
-[ ] Validate severity and status values
-[ ] Protect all vulnerability endpoints with JWT
+[x] Create Vulnerability entity
+[x] Create vulnerability DTOs
+[x] Create vulnerability repository
+[x] Create vulnerability service
+[x] Create vulnerability controller
+[x] Add endpoints for create, read, update, and delete
+[x] Include fields like CVE ID, title, severity, description, and status
+[x] Validate severity and status values
+[x] Protect all vulnerability endpoints with JWT
 
 Phase 8: Asset-Vulnerability Assignment
 
