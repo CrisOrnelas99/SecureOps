@@ -135,13 +135,13 @@ User story: As a user, I want to assign vulnerabilities to assets so I know whic
 
 Architecture decision: Use a many-to-many relationship between assets and vulnerabilities.
 
-[ ] Create the asset_vulnerabilities relationship
-[ ] Add endpoint to assign a vulnerability to an asset
-[ ] Add endpoint to remove a vulnerability from an asset
-[ ] Add endpoint or response field to show vulnerabilities assigned to an asset
-[ ] Prevent duplicate assignments
-[ ] Return safe errors when asset or vulnerability does not exist
-[ ] Test the full backend relationship flow
+[x] Create the asset_vulnerabilities relationship
+[x] Add endpoint to assign a vulnerability to an asset
+[x] Add endpoint to remove a vulnerability from an asset
+[x] Add endpoint or response field to show vulnerabilities assigned to an asset
+[x] Prevent duplicate assignments
+[x] Return safe errors when asset or vulnerability does not exist
+[x] Test the full backend relationship flow
 
 Phase 9: Go Risk Service
 

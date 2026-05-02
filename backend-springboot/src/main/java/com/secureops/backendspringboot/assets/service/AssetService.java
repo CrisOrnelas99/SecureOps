@@ -5,14 +5,20 @@ import com.secureops.backendspringboot.assets.entity.Asset;
 import com.secureops.backendspringboot.assets.dto.AssetRequest;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.secureops.backendspringboot.vulnerabilities.entity.Vulnerability;
+import com.secureops.backendspringboot.vulnerabilities.repository.VulnerabilityRepository;
 
 @Service
 public class AssetService {
 
     private final AssetRepository assetRepository;
+    private final VulnerabilityRepository vulnerabilityRepository;
 
-    public AssetService(AssetRepository assetRepository) {
+    public AssetService(AssetRepository assetRepository, VulnerabilityRepository vulnerabilityRepository) {
         this.assetRepository = assetRepository;
+        this.vulnerabilityRepository = vulnerabilityRepository;
     }
 
     public List<Asset> getAllAssets() {
@@ -65,6 +71,35 @@ public class AssetService {
 
         assetRepository.delete(asset);
         return asset;
+    }
+
+    @Transactional  //wraps the entire method in a single transaction, making the check-then-insert atomic and eliminating session dependency
+    public Asset assignVulnerability(Long assetId, Long vulnerabilityId) {
+        Asset asset = assetRepository.findById(assetId)
+                .orElseThrow(() -> new IllegalArgumentException("Asset not found."));
+
+        Vulnerability vulnerability = vulnerabilityRepository.findById(vulnerabilityId)
+                .orElseThrow(() -> new IllegalArgumentException("Vulnerability not found."));
+
+        if (asset.getVulnerabilities().contains(vulnerability)) {
+            throw new IllegalArgumentException("Vulnerability is already assigned to this asset.");
+        }
+
+        asset.getVulnerabilities().add(vulnerability);
+
+        return assetRepository.save(asset);
+    }
+    @Transactional
+    public Asset removeVulnerability(Long assetId, Long vulnerabilityId) {
+        Asset asset = assetRepository.findById(assetId)
+                .orElseThrow(() -> new IllegalArgumentException("Asset not found."));
+
+        Vulnerability vulnerability = vulnerabilityRepository.findById(vulnerabilityId)
+                .orElseThrow(() -> new IllegalArgumentException("Vulnerability not found."));
+
+        asset.getVulnerabilities().remove(vulnerability);
+
+        return assetRepository.save(asset);
     }
 
 
