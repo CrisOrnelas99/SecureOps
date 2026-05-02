@@ -1,0 +1,49 @@
+Git Workflow For Future Phases
+
+Goal:
+Stop working directly on main.
+Do new work on a feature branch so GitHub PRs and CodeRabbit reviews work correctly.
+
+Step 1: Check repo status
+git status
+
+Step 2: Switch to main
+git checkout main
+
+Step 3: Pull latest main
+git pull
+
+Step 4: Create a new feature branch
+Example:
+git checkout -b feature/asset-vulnerability-assignment
+
+Step 5: Do the coding work on that branch
+
+Step 6: Stage changes
+git add .
+
+Step 7: Commit changes
+Example:
+git commit -m "Add asset-vulnerability assignment endpoints"
+
+Step 8: Push the branch to GitHub
+git push -u origin feature/asset-vulnerability-assignment
+
+Step 9: Open GitHub or GitHub Desktop
+Create a Pull Request:
+- base branch: main
+- compare branch: feature/asset-vulnerability-assignment
+
+Step 10: Let CodeRabbit review the PR
+
+Short Version
+git status
+git checkout main
+git pull
+git checkout -b feature/asset-vulnerability-assignment
+git add .
+git commit -m "Add asset-vulnerability assignment endpoints"
+git push -u origin feature/asset-vulnerability-assignment
+
+Important Rule
+Do not keep building new features directly on main if you want PR reviews.

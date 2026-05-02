@@ -49,4 +49,21 @@ public class AssetController {
         return ResponseEntity.status(HttpStatus.OK).body(deletedAsset);
     }
 
+    @PostMapping("/{assetId}/vulnerabilities/{vulnerabilityId}")
+    public ResponseEntity<Asset> assignVulnerability(
+            @PathVariable Long assetId,
+            @PathVariable Long vulnerabilityId
+    ) {
+        Asset updatedAsset = assetService.assignVulnerability(assetId, vulnerabilityId);
+        return ResponseEntity.status(HttpStatus.OK).body(updatedAsset);
+    }
+
+    @DeleteMapping("/{assetId}/vulnerabilities/{vulnerabilityId}")
+    public ResponseEntity<Asset> removeVulnerability(
+            @PathVariable Long assetId,
+            @PathVariable Long vulnerabilityId
+    ) {
+        Asset updatedAsset = assetService.removeVulnerability(assetId, vulnerabilityId);
+        return ResponseEntity.status(HttpStatus.OK).body(updatedAsset);
+    }
 }

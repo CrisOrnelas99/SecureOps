@@ -5,6 +5,10 @@ package com.secureops.backendspringboot.assets.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import com.secureops.backendspringboot.vulnerabilities.entity.Vulnerability;
+import java.util.HashSet;   //creates an empty set to hold assigned vulnerabilities
+import java.util.Set;   //stores multiple unique vulnerabilites on one asset
+
 @Entity
 @Table(name="assets")
 public class Asset {
@@ -53,6 +57,18 @@ public class Asset {
     private String riskLevel;
     public String getRiskLevel() { return riskLevel; }
     public void setRiskLevel(String riskLevel) { this.riskLevel = riskLevel; }
+
+    @ManyToMany //One asset can be linkned to many vulnerabilities, and each vulnerabilit can affect many assets
+    @JoinTable( //Defines the join table that connects assets and vulnerabilities
+            name = "asset_vulnerabilities",
+            joinColumns = @JoinColumn(name = "asset_id"),
+            inverseJoinColumns = @JoinColumn(name = "vulnerability_id")
+    )
+    private Set<Vulnerability> vulnerabilities = new HashSet<>();   //holds the vulnerabilities aassigned to the asset
+    public Set<Vulnerability> getVulnerabilities() { return vulnerabilities; }
+    public void setVulnerabilities(Set<Vulnerability> vulnerabilities) {
+        this.vulnerabilities = vulnerabilities;
+    }
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
