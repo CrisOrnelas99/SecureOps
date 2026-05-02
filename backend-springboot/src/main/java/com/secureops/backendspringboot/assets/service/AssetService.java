@@ -5,6 +5,7 @@ import com.secureops.backendspringboot.assets.entity.Asset;
 import com.secureops.backendspringboot.assets.dto.AssetRequest;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.secureops.backendspringboot.vulnerabilities.entity.Vulnerability;
 import com.secureops.backendspringboot.vulnerabilities.repository.VulnerabilityRepository;
@@ -72,6 +73,7 @@ public class AssetService {
         return asset;
     }
 
+    @Transactional  //wraps the entire method in a single transaction, making the check-then-insert atomic and eliminating session dependency
     public Asset assignVulnerability(Long assetId, Long vulnerabilityId) {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new IllegalArgumentException("Asset not found."));
@@ -87,7 +89,7 @@ public class AssetService {
 
         return assetRepository.save(asset);
     }
-
+    @Transactional
     public Asset removeVulnerability(Long assetId, Long vulnerabilityId) {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new IllegalArgumentException("Asset not found."));

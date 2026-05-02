@@ -87,5 +87,18 @@ public class Asset {
         this.updatedAt = LocalDateTime.now();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Asset)) return false;
+        Asset asset = (Asset) o;
+        return id != null && id.equals(asset.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
 
 }
