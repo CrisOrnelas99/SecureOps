@@ -181,6 +181,21 @@ Where:
 What this does:
 - moves your reviewed feature branch changes into master
 
+Step 15A: Delete the remote branch after merge
+What to do:
+- if GitHub shows a "Delete branch" button, click it
+- or enable automatic branch deletion in GitHub repo settings
+
+GitHub setting:
+- Settings
+- General
+- Pull Requests
+- Automatically delete head branches
+
+What this does:
+- removes the merged feature branch from GitHub
+- this only affects the remote branch, not your local branch
+
 Step 16: Sync local master after merge
 Commands:
 git checkout master
@@ -189,15 +204,18 @@ git pull
 What this does:
 - updates your local master with the merged PR changes
 
-Step 17: Optional cleanup
+Step 17: Delete the local feature branch
 Delete local branch:
 git branch -d feature/asset-vulnerability-assignment
 
-Delete remote branch:
+What this does:
+- removes the merged branch from your computer
+
+Optional if the remote branch was not deleted in GitHub:
 git push origin --delete feature/asset-vulnerability-assignment
 
 What this does:
-- keeps your branch list clean after the work is merged
+- manually deletes the remote branch if GitHub did not delete it
 
 --------------------------------------------------
 Short Version
@@ -223,8 +241,10 @@ Then:
   git commit --allow-empty -m "Trigger CodeRabbit review"
   git push
 - merge PR into master
+- delete remote branch in GitHub if needed
 - git checkout master
 - git pull
+- git branch -d feature/your-feature-name
 
 --------------------------------------------------
 General Useful Commands

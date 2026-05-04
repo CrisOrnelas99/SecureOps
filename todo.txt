@@ -151,15 +151,15 @@ User story: As a user, I want a risk score so I can prioritize the most vulnerab
 
 Architecture decision: The Go service only calculates risk. It does not connect to the database.
 
-[ ] Create the Go project
-[ ] Add /health endpoint
-[ ] Add POST /calculate-risk endpoint
-[ ] Accept asset criticality and vulnerability counts
-[ ] Calculate risk score using a simple formula
-[ ] Return risk score and risk level
-[ ] Validate request values
-[ ] Add a Dockerfile for the Go service
-[ ] Test the Go service by itself
+[x] Create the Go project
+[x] Add /health endpoint
+[x] Add POST /calculate-risk endpoint
+[x] Accept asset criticality and vulnerability counts
+[x] Calculate risk score using a simple formula
+[x] Return risk score and risk level
+[x] Validate request values
+[x] Add a Dockerfile for the Go service
+[x] Test the Go service by itself
 
 Phase 10: Spring Boot to Go Integration
 
@@ -169,13 +169,13 @@ User story: As a user, I want to click calculate risk and have the system update
 
 Architecture decision: Angular never calls Go directly. Spring Boot calls Go.
 
-[ ] Add POST /api/assets/{id}/calculate-risk
-[ ] In Spring Boot, count open vulnerabilities by severity
-[ ] Send the counts and asset criticality to the Go service
-[ ] Receive the risk score and risk level from Go
-[ ] Save the result on the asset in PostgreSQL
-[ ] Return the updated asset to the frontend
-[ ] Handle Go service errors safely
+[x] Add POST /api/assets/{id}/calculate-risk
+[x] In Spring Boot, count open vulnerabilities by severity
+[x] Send the counts and asset criticality to the Go service
+[x] Receive the risk score and risk level from Go
+[x] Save the result on the asset in PostgreSQL
+[x] Return the updated asset to the frontend
+[x] Handle Go service errors safely
 
 Week 2 — Frontend, Integration, Docker, and Polish
 Phase 11: Angular Foundation

@@ -66,4 +66,10 @@ public class AssetController {
         Asset updatedAsset = assetService.removeVulnerability(assetId, vulnerabilityId);
         return ResponseEntity.status(HttpStatus.OK).body(updatedAsset);
     }
+
+    @PostMapping("/{id}/calculate-risk")
+    public ResponseEntity<Asset> calculateRisk(@PathVariable Long id) {
+        Asset updatedAsset = assetService.calculateRisk(id);
+        return ResponseEntity.status(HttpStatus.OK).body(updatedAsset);
+    }
 }

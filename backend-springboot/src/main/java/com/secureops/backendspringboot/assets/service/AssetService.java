@@ -10,15 +10,21 @@ import org.springframework.transaction.annotation.Transactional;
 import com.secureops.backendspringboot.vulnerabilities.entity.Vulnerability;
 import com.secureops.backendspringboot.vulnerabilities.repository.VulnerabilityRepository;
 
+import com.secureops.backendspringboot.risk.dto.RiskCalculationRequest;
+import com.secureops.backendspringboot.risk.dto.RiskCalculationResponse;
+import org.springframework.web.client.RestClient;   //lets your spring boot backend make HTTP requests to another service
+
 @Service
 public class AssetService {
 
     private final AssetRepository assetRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
+    private final RestClient restClient;
 
-    public AssetService(AssetRepository assetRepository, VulnerabilityRepository vulnerabilityRepository) {
+    public AssetService(AssetRepository assetRepository, VulnerabilityRepository vulnerabilityRepository, RestClient restClient) {
         this.assetRepository = assetRepository;
         this.vulnerabilityRepository = vulnerabilityRepository;
+        this.restClient = restClient;
     }
 
     public List<Asset> getAllAssets() {
@@ -100,6 +106,62 @@ public class AssetService {
         asset.getVulnerabilities().remove(vulnerability);
 
         return assetRepository.save(asset);
+    }
+
+    private RiskCalculationRequest buildRiskCalculationRequest(Asset asset) {
+
+        int criticalCount = 0;
+        int highCount = 0;
+        int mediumCount = 0;
+        int lowCount = 0;
+
+        for (Vulnerability vulnerability : asset.getVulnerabilities()) {    //loops through the assets assigned vulnerabilities
+
+            String severity = vulnerability.getSeverity();
+
+            if ("Critical".equals(severity))
+                criticalCount++;
+            else if ("High".equals(severity))
+                highCount++;
+            else if ("Medium".equals(severity))
+                mediumCount++;
+            else if ("Low".equals(severity))
+                lowCount++;
+        }
+        RiskCalculationRequest request = new RiskCalculationRequest();
+        request.setAssetId(asset.getId());
+        request.setCriticality(asset.getCriticality());
+        request.setCriticalVulnerabilities(criticalCount);
+        request.setHighVulnerabilities(highCount);
+        request.setMediumVulnerabilities(mediumCount);
+        request.setLowVulnerabilities(lowCount);
+
+        return request;
+    }
+
+    @Transactional
+    public Asset calculateRisk(Long id) {
+
+        Asset asset = assetRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Asset not found."));
+
+        RiskCalculationRequest request = buildRiskCalculationRequest(asset);
+
+        RiskCalculationResponse response = restClient.post()
+                .uri("http://risk-service:8081/calculate-risk")
+                .body(request)
+                .retrieve()
+                .body(RiskCalculationResponse.class);
+
+        if (response == null) {
+            throw new IllegalStateException("Risk service returned no response.");
+        }
+
+        asset.setRiskScore((short) response.getRiskScore());
+        asset.setRiskLevel(response.getRiskLevel());
+
+        return assetRepository.save(asset);
+
     }
 
 
