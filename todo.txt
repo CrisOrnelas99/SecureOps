@@ -186,13 +186,13 @@ User story: As a user, I want a clean interface so I can use the cybersecurity d
 
 Architecture decision: Use Angular services for API calls, guards for protected pages, and components for each feature.
 
-[ ] Create the Angular project
-[ ] Add routing
-[ ] Create layout/navigation
-[ ] Create pages for login, register, dashboard, assets, asset details, and vulnerabilities
-[ ] Create shared interfaces/models
-[ ] Create environment variable for backend API URL
-[ ] Create Angular services for auth, assets, vulnerabilities, and dashboard
+[x] Create the Angular project
+[x] Add routing
+[x] Create layout/navigation
+[x] Create pages for login, register, dashboard, assets, asset details, and vulnerabilities
+[x] Create shared interfaces/models
+[x] Create environment variable for backend API URL
+[x] Create Angular services for auth, assets, vulnerabilities, and dashboard
 [ ] Add basic styling
 
 Phase 12: Angular Authentication
