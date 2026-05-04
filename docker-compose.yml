@@ -25,5 +25,13 @@ services:
       - postgres
     ports:
       - "8080:8080"
+
+  risk-service:
+    build:
+      context: ./risk-service-go
+    container_name: secureops-risk-service
+    restart: unless-stopped
+
+
 volumes:
   postgres_data:
