@@ -8,8 +8,10 @@ import (
 	"net/http"
 )
 
+const MAX_VULN_COUNT = 100000
+
 type RiskRequest struct {
-	AssetID                 int    `json:"assetId"`
+	AssetID                 int64  `json:"assetId"`
 	Criticality             string `json:"criticality"`
 	CriticalVulnerabilities int    `json:"criticalVulnerabilities"`
 	HighVulnerabilities     int    `json:"highVulnerabilities"`
@@ -18,7 +20,7 @@ type RiskRequest struct {
 }
 
 type RiskResponse struct {
-	AssetID   int    `json:"assetId"`   //asset Id returned backed to the called
+	AssetID   int64  `json:"assetId"`   //asset Id returned backed to the called
 	RiskScore int    `json:"riskScore"` //Final calculated risk score
 	RiskLevel string `json:"riskLevel"` //final risk label like Low, Medium, High, or Critical
 }
@@ -64,11 +66,11 @@ func calculateRiskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if request.Criticality != "Low" && request.Criticality != "Medium" && request.Criticality != "High" {
+	if request.Criticality != "Low" && request.Criticality != "Medium" && request.Criticality != "High" && request.Criticality != "Critical" {
 		w.WriteHeader(http.StatusBadRequest)
 
 		response := map[string]string{
-			"error": "criticality must be Low, Medium, or High",
+			"error": "criticality must be Low, Medium, High, or Critical",
 		}
 
 		json.NewEncoder(w).Encode(response)
@@ -87,16 +89,30 @@ func calculateRiskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if request.CriticalVulnerabilities > MAX_VULN_COUNT || request.HighVulnerabilities > MAX_VULN_COUNT ||
+		request.MediumVulnerabilities > MAX_VULN_COUNT || request.LowVulnerabilities > MAX_VULN_COUNT {
+		w.WriteHeader(http.StatusBadRequest)
+
+		response := map[string]string{
+			"error": "vulnerability counts exceed the maximum allowed value",
+		}
+
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	// Calculate the weighted risk score and map it to a risk level
-	riskScore := (request.CriticalVulnerabilities * 25) +
-		(request.HighVulnerabilities * 15) +
-		(request.MediumVulnerabilities * 8) +
-		(request.LowVulnerabilities * 3)
+	riskScore := (int64(request.CriticalVulnerabilities) * 25) +
+		(int64(request.HighVulnerabilities) * 15) +
+		(int64(request.MediumVulnerabilities) * 8) +
+		(int64(request.LowVulnerabilities) * 3)
 
 	if request.Criticality == "Medium" {
 		riskScore += 10
 	} else if request.Criticality == "High" {
 		riskScore += 20
+	} else if request.Criticality == "Critical" {
+		riskScore += 30
 	}
 
 	if riskScore > 100 {
@@ -116,7 +132,7 @@ func calculateRiskHandler(w http.ResponseWriter, r *http.Request) {
 	// Build and return the JSON response with the calculated result
 	response := RiskResponse{
 		AssetID:   request.AssetID,
-		RiskScore: riskScore,
+		RiskScore: int(riskScore),
 		RiskLevel: riskLevel,
 	}
 

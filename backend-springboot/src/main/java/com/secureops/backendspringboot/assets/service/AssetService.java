@@ -12,7 +12,13 @@ import com.secureops.backendspringboot.vulnerabilities.repository.VulnerabilityR
 
 import com.secureops.backendspringboot.risk.dto.RiskCalculationRequest;
 import com.secureops.backendspringboot.risk.dto.RiskCalculationResponse;
+import com.secureops.backendspringboot.exception.ClientServiceException;
+import com.secureops.backendspringboot.exception.RemoteServiceException;
 import org.springframework.web.client.RestClient;   //lets your spring boot backend make HTTP requests to another service
+import org.springframework.web.client.RestClientException;
+import org.springframework.util.StreamUtils;
+
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class AssetService {
@@ -20,11 +26,18 @@ public class AssetService {
     private final AssetRepository assetRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
     private final RestClient restClient;
+    private final AssetRiskService assetRiskService;
 
-    public AssetService(AssetRepository assetRepository, VulnerabilityRepository vulnerabilityRepository, RestClient restClient) {
+    public AssetService(
+            AssetRepository assetRepository,
+            VulnerabilityRepository vulnerabilityRepository,
+            RestClient restClient,
+            AssetRiskService assetRiskService
+    ) {
         this.assetRepository = assetRepository;
         this.vulnerabilityRepository = vulnerabilityRepository;
         this.restClient = restClient;
+        this.assetRiskService = assetRiskService;
     }
 
     public List<Asset> getAllAssets() {
@@ -118,14 +131,19 @@ public class AssetService {
         for (Vulnerability vulnerability : asset.getVulnerabilities()) {    //loops through the assets assigned vulnerabilities
 
             String severity = vulnerability.getSeverity();
+            if (severity == null) {
+                continue;
+            }
 
-            if ("Critical".equals(severity))
+            String normalizedSeverity = severity.trim();
+
+            if ("Critical".equalsIgnoreCase(normalizedSeverity))
                 criticalCount++;
-            else if ("High".equals(severity))
+            else if ("High".equalsIgnoreCase(normalizedSeverity))
                 highCount++;
-            else if ("Medium".equals(severity))
+            else if ("Medium".equalsIgnoreCase(normalizedSeverity))
                 mediumCount++;
-            else if ("Low".equals(severity))
+            else if ("Low".equalsIgnoreCase(normalizedSeverity))
                 lowCount++;
         }
         RiskCalculationRequest request = new RiskCalculationRequest();
@@ -139,29 +157,39 @@ public class AssetService {
         return request;
     }
 
-    @Transactional
     public Asset calculateRisk(Long id) {
+        RiskCalculationRequest request = assetRiskService.loadRiskCalculationRequest(id);
 
-        Asset asset = assetRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Asset not found."));
-
-        RiskCalculationRequest request = buildRiskCalculationRequest(asset);
-
-        RiskCalculationResponse response = restClient.post()
-                .uri("http://risk-service:8081/calculate-risk")
-                .body(request)
-                .retrieve()
-                .body(RiskCalculationResponse.class);
+        RiskCalculationResponse response;
+        try {
+            response = restClient.post()
+                    .uri("http://risk-service:8081/calculate-risk")
+                    .body(request)
+                    .retrieve()
+                    .onStatus(
+                            status -> status.is4xxClientError(),
+                            (clientRequest, clientResponse) -> {
+                                String responseBody = StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);
+                                throw new ClientServiceException("Risk service rejected the request: " + responseBody);
+                            }
+                    )
+                    .onStatus(
+                            status -> status.is5xxServerError(),
+                            (clientRequest, clientResponse) -> {
+                                String responseBody = StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);
+                                throw new RemoteServiceException("Risk service failed: " + responseBody);
+                            }
+                    )
+                    .body(RiskCalculationResponse.class);
+        } catch (RestClientException ex) {
+            throw new RemoteServiceException("Failed to call risk service.", ex);
+        }
 
         if (response == null) {
             throw new IllegalStateException("Risk service returned no response.");
         }
 
-        asset.setRiskScore((short) response.getRiskScore());
-        asset.setRiskLevel(response.getRiskLevel());
-
-        return assetRepository.save(asset);
-
+        return assetRiskService.persistRiskResult(id, response);
     }
 
 

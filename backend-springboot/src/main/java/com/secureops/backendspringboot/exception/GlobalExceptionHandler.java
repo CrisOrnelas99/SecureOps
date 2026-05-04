@@ -27,6 +27,20 @@ public class GlobalExceptionHandler {
                 .body(ex.getMessage());
     }
 
+    @ExceptionHandler(ClientServiceException.class)
+    public ResponseEntity<String> handleClientServiceException(ClientServiceException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(RemoteServiceException.class)
+    public ResponseEntity<String> handleRemoteServiceException(RemoteServiceException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body("Risk service is unavailable.");
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<String> handleBadCredentialsException(BadCredentialsException ex) {
         return ResponseEntity
