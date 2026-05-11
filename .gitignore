@@ -4,3 +4,5 @@ dist/
 target/
 .idea/
 *.iml
+Roadmap.md
+Agents.md

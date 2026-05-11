@@ -1,263 +1,317 @@
 # SecureOps Lite
 
-SecureOps Lite is a security-focused full-stack application for tracking assets, managing vulnerabilities, and calculating risk across an environment.
+SecureOps Lite is a security-focused full-stack application for tracking assets, importing vulnerability intelligence, calculating risk, and explaining security posture in one place.
 
-The project is currently being built. This repository represents the direction of the application, the architecture behind it, and the feature set it is intended to support as development continues.
+The project is being built around a practical cybersecurity workflow:
 
-## Project Overview
+- store assets with meaningful product details
+- import relevant CVEs from NVD / NIST
+- assign vulnerabilities to affected assets
+- calculate asset risk
+- surface important alert conditions
+- refresh vulnerability intelligence over time
+- explain asset risk through an asset-aware chatbot
 
-The goal is to bring a few related security workflows into one system:
+This is not intended to be a full SIEM, scanner, or enterprise vulnerability platform. The goal is a focused application that shows how secure backend design, external vulnerability data, AI-assisted matching, and small supporting services can work together in one system.
 
-- Track assets such as servers, workstations, firewalls, routers, databases, and cloud services
-- Record vulnerabilities and their severity
-- Assign vulnerabilities to assets
-- Calculate a risk score based on vulnerability data and asset criticality
-- Show the overall security picture through a dashboard
+## What The Product Does
 
-This is not meant to be a full enterprise SIEM or scanner. The focus is a clean, practical application that shows how asset data, vulnerability data, authentication, and service-to-service communication fit together.
+SecureOps Lite is designed to help a user answer questions like:
 
-## Core Idea
+- What assets do I have?
+- Which vulnerabilities affect them?
+- Which assets are riskiest right now?
+- Why is a given asset high risk?
+- Which vulnerabilities came from official NVD data?
+- What changed after an import, refresh, or recalculation?
 
-Each asset in the system carries operational details and a security context. Vulnerabilities can be linked to assets, and those relationships feed into a risk score that helps identify what needs attention first.
+The core product direction is:
 
-Example asset:
+- Angular frontend for the user interface
+- Spring Boot as the main backend and trust boundary
+- PostgreSQL for persistence
+- Go services for narrow supporting tasks
+- NVD / NIST as the vulnerability source of truth
+- AI as a helper for matching, ranking, and explanation
 
-```text
-Asset Name: Firewall-01
-Asset Type: Firewall
-IP Address: 192.168.1.1
-Operating System: pfSense
-Owner: IT Department
-Criticality: High
-Assigned Vulnerabilities: 4
-Risk Score: 82
-Risk Level: Critical
-```
+## Current Repository Status
+
+This repository is in active development.
+
+What is already present in the codebase:
+
+- Spring Boot backend foundation
+- JWT-based authentication flow
+- asset CRUD backend
+- vulnerability CRUD backend
+- asset-to-vulnerability assignment backend
+- Go risk scoring service
+- Docker Compose for PostgreSQL, backend, and risk service
+- Angular frontend project structure
+
+What is planned next or still in progress:
+
+- Angular authentication and main screens
+- NVD / NIST vulnerability import
+- AI-assisted product matching and relevance support
+- asset-scoped chatbot
+- `alert-service-go`
+- `cve-sync-service-go`
+- full multi-service Docker integration
+
+If you want the implementation-level plan, see `Roadmap.md` and `architecture.md`.
 
 ## Planned Architecture
 
 ```text
+Browser
+  |
+  v
 Angular frontend
-    |
-    v
+  |
+  v
 Spring Boot API
-    |
-    +--> PostgreSQL
-    |
-    +--> Go risk-scoring service
+  |
+  +--> PostgreSQL
+  |
+  +--> risk-service-go
+  |
+  +--> alert-service-go
+  |
+  +--> cve-sync-service-go
+  |
+  +--> NVD / NIST APIs
+  |
+  `--> AI provider API
 ```
 
-The backend handles authentication, validation, API logic, and persistence. PostgreSQL stores the application data. The Go service is intended to handle isolated risk calculations, and the Angular frontend provides the user interface.
+The backend remains the main security and orchestration boundary.
+
+That means:
+
+- Angular should not call NVD directly
+- Angular should not call AI providers directly
+- Angular should not call Go services directly
+- Spring Boot handles authorization, validation, persistence, and external-service coordination
 
 ## Main Features
 
 ### Authentication
 
-The application is designed to support:
+The application is designed around:
 
-- User registration
-- User login
+- user registration
+- user login
 - JWT-based authentication
-- Protected backend endpoints
-- Protected frontend routes
-
-Initial access can stay simple, with room to expand later into separate roles such as admin, analyst, or viewer.
-
-### Dashboard
-
-The dashboard is intended to give a quick view of the environment, including:
-
-- Total assets
-- Total vulnerabilities
-- High-risk assets
-- Critical vulnerabilities
-- Average risk score
-- Recently updated assets
-
-Example:
-
-```text
-Assets: 12
-Open Vulnerabilities: 28
-Critical Assets: 3
-Average Risk Score: 64
-```
+- protected backend routes
+- protected frontend routes
 
 ### Asset Inventory
 
-Each asset is intended to include:
+Assets are intended to hold both internal tracking information and product identity information.
 
-- Asset ID
-- Asset name
-- Asset type
+Examples of asset fields:
+
+- asset name
+- asset type
+- vendor
+- product
+- version
 - IP address
-- Operating system
-- Owner
-- Criticality
-- Risk score
-- Risk level
-- Created date
-- Updated date
+- operating system
+- owner
+- criticality
+- risk score
+- risk level
 
-The system is being built to support:
+Why the product fields matter:
 
-- Creating assets
-- Viewing all assets
-- Viewing a single asset
-- Updating assets
-- Deleting assets
-- Searching and filtering assets
+An internal label like `Firewall-01` is useful for inventory, but not enough for vulnerability matching. To pull relevant CVEs from NVD, the system needs product-aware fields such as `vendor`, `product`, and `version`.
 
 ### Vulnerability Tracking
 
-Each vulnerability entry is intended to include:
+Vulnerabilities can exist in the system in two ways:
 
-- Vulnerability ID
+- manually created records
+- imported records from NVD / NIST
+
+Vulnerability records are intended to include:
+
 - CVE ID
-- Title
-- Severity
-- Description
-- Status
-- Created date
-- Updated date
+- title
+- severity
+- description
+- status
+- CVSS details where available
+- source metadata
+- publish and update timestamps where useful
 
-The application is meant to support:
+### NVD / NIST Vulnerability Import
 
-- Creating vulnerabilities
-- Viewing all vulnerabilities
-- Viewing a single vulnerability
-- Updating vulnerabilities
-- Deleting vulnerabilities
-- Filtering by severity
-- Filtering by status
+The planned import flow is:
 
-The data can be entered manually or seeded with mock records. The project is focused on managing and connecting the data, not on performing live scanning.
+1. create an asset
+2. provide product-aware details
+3. trigger `Find Vulnerabilities from NVD`
+4. map the asset to a likely CPE
+5. import matching CVEs
+6. store them locally
+7. assign them to the asset
+8. recalculate risk
 
-### Asset-to-Vulnerability Assignment
+NVD is intended to be the vulnerability source of truth.
 
-The data model is built around a many-to-many relationship:
+AI may help with:
 
-- One asset can have many vulnerabilities
-- One vulnerability can affect many assets
+- product name normalization
+- candidate CPE ranking
+- CVE relevance review
+- user-facing explanation
 
-Example:
+AI is not intended to invent vulnerabilities or silently override official NVD data.
+
+### Risk Scoring
+
+The current dedicated Go service calculates an asset risk score from summarized vulnerability data.
+
+Example factors:
+
+- number of critical vulnerabilities
+- number of high vulnerabilities
+- number of medium vulnerabilities
+- number of low vulnerabilities
+- asset criticality
+
+The risk score is intended to help prioritize attention across assets.
+
+### Alerting
+
+The planned `alert-service-go` will focus on security events such as:
+
+- newly imported critical CVEs
+- assets crossing a risk threshold
+- repeated sync failures
+- important state changes that should be surfaced in the UI
+
+### CVE Refresh
+
+The planned `cve-sync-service-go` will refresh locally imported vulnerability data so the application does not drift too far from upstream NVD changes over time.
+
+### Asset Chatbot
+
+The planned chatbot is intended to be:
+
+- asset-scoped
+- grounded in local application data
+- read-only in the first version
+
+It should answer questions like:
+
+- What vulnerabilities affect this asset?
+- Why is this asset critical?
+- Which CVEs matter most here?
+- What changed after the last import or sync?
+
+## Security Approach
+
+SecureOps Lite is being built with a security-first mindset.
+
+Key security principles in this repository:
+
+- hash passwords with BCrypt
+- use JWT for authenticated backend access
+- enforce authorization on the backend
+- validate security-relevant input server-side
+- use DTOs instead of exposing internal entities directly
+- keep secrets out of source control
+- use environment-based configuration
+- keep AI and external API keys server-side only
+- treat AI output as advisory text, not trusted system truth
+- keep external vulnerability data grounded in official NVD records
+- use safe error handling and avoid leaking stack traces or secrets
+
+There is also a lightweight WAF-style filter in the backend plan to block obviously suspicious request patterns such as simple SQL injection-like strings, XSS-like input, and path traversal attempts.
+
+## Repository Structure
 
 ```text
-Server-01
-- CVE-2024-12345 | High | Open
-- CVE-2024-77777 | Critical | Open
-- CVE-2024-88888 | Medium | Fixed
+secureops-lite/
+|-- frontend-angular/
+|-- backend-springboot/
+|-- risk-service-go/
+|-- docker-compose.yml
+|-- .env
+|-- README.md
+|-- Roadmap.md
+`-- architecture.md
 ```
 
-### Asset Details View
+Planned additions:
 
-An asset details page is intended to show:
+- `alert-service-go/`
+- `cve-sync-service-go/`
 
-- Asset name
-- Asset type
-- IP address
-- Operating system
-- Owner
-- Criticality
-- Current risk score
-- Current risk level
-- Assigned vulnerabilities
+## Running The Current Project
 
-It should also support actions such as assigning vulnerabilities, removing vulnerabilities, and recalculating risk.
+The current runnable backend stack in this repository is based on Docker Compose.
 
-## Risk Scoring Service
+### Prerequisites
 
-The project includes a separate Go service for risk scoring.
+- Docker Desktop
+- Java 21 for local backend work if not using Docker only
+- Node.js for local Angular work
+- Go for local Go service work if not using Docker only
 
-Its responsibility is straightforward:
+### Current Compose Services
 
-- Accept summarized vulnerability data for an asset
-- Return a risk score and risk level
+The current `docker-compose.yml` defines:
 
-Example request:
+- `postgres`
+- `backend`
+- `risk-service`
 
-```json
-{
-  "assetId": 5,
-  "criticality": "High",
-  "criticalVulnerabilities": 1,
-  "highVulnerabilities": 2,
-  "mediumVulnerabilities": 3,
-  "lowVulnerabilities": 1
-}
+Start them with:
+
+```bash
+docker compose up --build
 ```
 
-Example response:
+Current port notes:
 
-```json
-{
-  "assetId": 5,
-  "riskScore": 78,
-  "riskLevel": "High"
-}
-```
+- backend: `http://localhost:8080`
+- PostgreSQL: mapped from `${POSTGRES_PORT}` to container `5432`
 
-Risk formula:
+### Frontend
 
-- Critical vulnerabilities x 25
-- High vulnerabilities x 15
-- Medium vulnerabilities x 8
-- Low vulnerabilities x 3
+The Angular frontend exists in `frontend-angular/`, but it is not yet wired into Docker Compose in the current state of the repo.
 
-Criticality bonus:
+At this stage, the frontend should be treated as in-progress application work rather than a finished production-ready UI.
 
-- Low = +0
-- Medium = +10
-- High = +20
+## Environment Configuration
 
-Maximum score:
+This repository uses a local `.env` file for development configuration.
 
-- 100
+Typical values include:
 
-Risk levels:
+- PostgreSQL database name
+- PostgreSQL username
+- PostgreSQL password
+- PostgreSQL port
+- JWT secret
+- JWT expiration
+- service URLs
+- later: NVD API key
+- later: AI provider API key
 
-- 0-25 = Low
-- 26-50 = Medium
-- 51-75 = High
-- 76-100 = Critical
+Important:
 
-## Security Direction
+- do not commit real secrets
+- do not expose API keys to the frontend
+- treat `.env` as local development configuration only
 
-The application is being built with a few security fundamentals in mind:
+## API Direction
 
-- Password hashing
-- JWT authentication
-- Protected routes
-- Input validation
-- Safe error handling
-- Environment-based configuration
-- Database constraints
-- Parameterized data access
-
-There is also room for a lightweight request-filtering layer to catch obviously suspicious input and log blocked requests, but the main priority is getting the core application structure right first.
-
-## Data Model
-
-The main tables are intended to be:
-
-- `users`
-- `assets`
-- `vulnerabilities`
-- `asset_vulnerabilities`
-
-An optional later addition:
-
-- `waf_events`
-
-Relationship goals:
-
-- One user can create many assets
-- One asset can have many vulnerabilities
-- One vulnerability can belong to many assets
-
-## API Design
-
-The API is being structured around these core routes.
+Current and planned API areas include:
 
 ### Authentication
 
@@ -271,9 +325,10 @@ The API is being structured around these core routes.
 - `POST /api/assets`
 - `PUT /api/assets/{id}`
 - `DELETE /api/assets/{id}`
+- `POST /api/assets/{id}/import-nvd-vulnerabilities`
 - `POST /api/assets/{id}/calculate-risk`
-- `POST /api/assets/{assetId}/vulnerabilities/{vulnerabilityId}`
-- `DELETE /api/assets/{assetId}/vulnerabilities/{vulnerabilityId}`
+- `GET /api/assets/{id}/alerts`
+- `POST /api/assets/{id}/chat`
 
 ### Vulnerabilities
 
@@ -283,90 +338,38 @@ The API is being structured around these core routes.
 - `PUT /api/vulnerabilities/{id}`
 - `DELETE /api/vulnerabilities/{id}`
 
-## Technology Roles
+### Assignment
 
-### Angular
+- `POST /api/assets/{assetId}/vulnerabilities/{vulnerabilityId}`
+- `DELETE /api/assets/{assetId}/vulnerabilities/{vulnerabilityId}`
 
-Angular is intended to provide:
+## Data Model Direction
 
-- Login page
-- Register page
-- Dashboard page
-- Assets page
-- Asset details page
-- Vulnerabilities page
+The main data model is built around:
 
-### Spring Boot
+- `users`
+- `assets`
+- `vulnerabilities`
+- `asset_vulnerabilities`
 
-Spring Boot is the main backend API and is intended to handle:
+Likely additions:
 
-- Authentication
-- Spring Security configuration
-- JWT validation
-- Asset CRUD
-- Vulnerability CRUD
-- Asset-vulnerability assignment
-- Go service integration
-- PostgreSQL persistence
-- Input validation
-- Error handling
+- `alerts`
+- optional `chat_sessions`
+- optional `chat_messages`
+- optional `waf_events`
+- optional sync history tables
 
-### PostgreSQL
+## Documentation
 
-PostgreSQL stores the application data and supports:
+Use the docs in this repo like this:
 
-- Relational data modeling
-- Foreign keys
-- Many-to-many relationships
-- Querying and filtering
-
-### Go Service
-
-The Go service is intended to expose:
-
-- `POST /calculate-risk`
-
-Its role is narrow by design:
-
-- Parse JSON
-- Validate input
-- Calculate risk
-- Return JSON
-
-### Docker
-
-Docker Compose is used to run the project locally.
-
-Repository structure:
-
-```text
-secureops-lite/
-|-- frontend-angular/
-|-- backend-springboot/
-|-- risk-service-go/
-|-- docker-compose.yml
-|-- .env
-`-- README.md
-```
-
-Run target:
-
-```bash
-docker compose up --build
-```
-
-## Current Build Status
-
-This repository is actively being built out toward the architecture and feature set above. Some pieces are already in place, and others are still being added.
-
-At the moment, the codebase includes:
-
-- A Spring Boot backend
-- Authentication endpoints
-- PostgreSQL configuration through Docker Compose
-- Repository structure for the frontend and Go service
+- `README.md`: product overview and current usage guidance
+- `architecture.md`: technical implementation guide
+- `Roadmap.md`: progress tracker and implementation sequence
+- `Agents.md`: repository-specific working instructions for the coding assistant
 
 ## Notes
 
-- The backend currently uses `spring.jpa.hibernate.ddl-auto=update`, which is convenient for development but should be replaced with managed migrations before production use.
-- Secrets in `.env` should be treated as local development values, not production credentials.
+- The backend currently uses `spring.jpa.hibernate.ddl-auto=update`, which is convenient for development but should later be replaced with managed migrations.
+- Some features described here are planned and documented, not fully implemented yet. This README reflects both the current repo state and the intended product direction so other users can understand what exists now and what is being built next.
