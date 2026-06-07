@@ -28,9 +28,9 @@ SecureOps Lite is designed to help a user answer questions like:
 The core product direction is:
 
 - Angular frontend for the user interface
-- Spring Boot as the main backend and trust boundary
+- Go with Gin and GORM as the main backend and trust boundary
 - PostgreSQL for persistence
-- Go services for narrow supporting tasks
+- focused Go services for narrow supporting tasks
 - NVD / NIST as the vulnerability source of truth
 - AI as a helper for matching, ranking, and explanation
 
@@ -40,11 +40,14 @@ This repository is in active development.
 
 What is already present in the codebase:
 
-- Spring Boot backend foundation
+- Go Gin/GORM backend foundation
 - JWT-based authentication flow
 - asset CRUD backend
 - vulnerability CRUD backend
 - asset-to-vulnerability assignment backend
+- layered backend boundaries with controller -> service -> repository -> database flow
+- controller-owned service interfaces and service-owned repository interfaces
+- package-local sentinel error files for repository, service, middleware, and security concerns
 - Go risk scoring service
 - Docker Compose for PostgreSQL, backend, and risk service
 - Angular frontend project structure
@@ -70,11 +73,11 @@ Browser
 Angular frontend
   |
   v
-Spring Boot API
+Go Gin/GORM API
   |
   +--> PostgreSQL
   |
-  +--> risk-service-go
+  +--> risk-service
   |
   +--> alert-service-go
   |
@@ -92,7 +95,7 @@ That means:
 - Angular should not call NVD directly
 - Angular should not call AI providers directly
 - Angular should not call Go services directly
-- Spring Boot handles authorization, validation, persistence, and external-service coordination
+- the Go backend handles authorization, validation, persistence, and external-service coordination
 
 ## Main Features
 
@@ -237,14 +240,50 @@ There is also a lightweight WAF-style filter in the backend plan to block obviou
 ```text
 secureops-lite/
 |-- frontend-angular/
-|-- backend-springboot/
-|-- risk-service-go/
+|-- backend-Go/
 |-- docker-compose.yml
 |-- .env
 |-- README.md
 |-- Roadmap.md
 `-- architecture.md
 ```
+
+Inside `backend-Go/`:
+
+```text
+backend-Go/
+|-- main/
+|   |-- api/
+|   |   |-- config/
+|   |   |-- controller/
+|   |   |-- database/
+|   |   |-- middleware/
+|   |   |-- model/
+|   |   |-- repository/
+|   |   |-- response/
+|   |   |-- security/
+|   |   `-- service/
+|   |-- main.go
+|   |-- Dockerfile
+|   |-- go.mod
+|   `-- go.sum
+`-- risk-service/
+    |-- api/
+    |-- main.go
+    |-- Dockerfile
+    `-- go.mod
+```
+
+Current backend package rules:
+
+- controllers handle HTTP request parsing, route parameters, and responses
+- controllers depend on service interfaces defined in `controller/service_interfaces.go`
+- services handle business validation and repository-error translation
+- services depend on repository interfaces defined in `service/repository_interfaces.go`
+- repositories handle GORM/database access only
+- DTO structs currently live in `model/*_dto.go`, separate from controller logic
+- `errors.go` files stay simple: error struct with `Message string`, one `Error()` method, and sentinel vars
+- config does not currently need `config_errors.go` because config loading does not return errors yet
 
 Planned additions:
 
@@ -258,9 +297,8 @@ The current runnable backend stack in this repository is based on Docker Compose
 ### Prerequisites
 
 - Docker Desktop
-- Java 21 for local backend work if not using Docker only
 - Node.js for local Angular work
-- Go for local Go service work if not using Docker only
+- Go for local backend and service work if not using Docker only
 
 ### Current Compose Services
 
@@ -371,5 +409,5 @@ Use the docs in this repo like this:
 
 ## Notes
 
-- The backend currently uses `spring.jpa.hibernate.ddl-auto=update`, which is convenient for development but should later be replaced with managed migrations.
+- The Go backend currently uses GORM auto-migration, which is convenient for development but should later be replaced with managed migrations.
 - Some features described here are planned and documented, not fully implemented yet. This README reflects both the current repo state and the intended product direction so other users can understand what exists now and what is being built next.

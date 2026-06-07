@@ -23,11 +23,11 @@ SecureOps Lite is a full-stack cybersecurity application for:
 The system is intentionally split into clear responsibilities:
 
 - Angular handles the browser UI
-- Spring Boot handles authentication, validation, business logic, data orchestration, NVD integration, AI orchestration, and chat orchestration
+- the Go Gin/GORM backend handles authentication, validation, business logic, data orchestration, NVD integration, AI orchestration, and chat orchestration
 - PostgreSQL stores application data
-- Go services handle narrow, isolated tasks that are fast, focused, and easy to reason about
+- focused Go services handle narrow, isolated tasks that are fast, focused, and easy to reason about
 
-> Design comment: the backend should stay the main system boundary. Even when AI or external services are added, Spring Boot should remain the place where trust decisions, authorization checks, and persistence rules are enforced.
+> Design comment: the backend should stay the main system boundary. Even when AI or external services are added, the main Go backend should remain the place where trust decisions, authorization checks, and persistence rules are enforced.
 
 ## High-Level Architecture
 
@@ -38,11 +38,11 @@ Browser
 Angular frontend
   |
   v
-Spring Boot API
+Go Gin/GORM API
   |
   +--> PostgreSQL
   |
-  +--> risk-service-go
+  +--> risk-service
   |
   +--> alert-service-go
   |
@@ -56,14 +56,14 @@ Spring Boot API
 ### Request flow
 
 1. A user interacts with the Angular frontend.
-2. Angular sends HTTP requests to the Spring Boot API.
-3. Spring Boot authenticates the request, validates input, and runs business logic.
-4. Spring Boot reads or writes data in PostgreSQL as needed.
-5. For NVD import flows, Spring Boot calls NVD APIs and optionally an AI-assisted matching layer.
-6. For risk scoring, Spring Boot sends summarized vulnerability data to `risk-service-go`.
-7. For security events, Spring Boot may notify `alert-service-go`.
-8. For scheduled CVE refresh work, Spring Boot coordinates with or receives updates from `cve-sync-service-go`.
-9. Spring Boot returns a safe response to Angular.
+2. Angular sends HTTP requests to the Go backend API.
+3. The Go backend authenticates the request, validates input, and runs business logic.
+4. The Go backend reads or writes data in PostgreSQL as needed.
+5. For NVD import flows, the Go backend calls NVD APIs and optionally an AI-assisted matching layer.
+6. For risk scoring, the Go backend sends summarized vulnerability data to `risk-service`.
+7. For security events, the Go backend may notify `alert-service-go`.
+8. For scheduled CVE refresh work, the Go backend coordinates with or receives updates from `cve-sync-service-go`.
+9. The Go backend returns a safe response to Angular.
 
 > Security comment: Angular should never call NVD directly, never call AI providers directly, and never call Go services directly. This keeps secrets on the server side and keeps authorization decisions centralized.
 
@@ -74,8 +74,7 @@ The repository should continue following the current naming style:
 ```text
 secureops-lite/
 |-- frontend-angular/
-|-- backend-springboot/
-|-- risk-service-go/
+|-- backend-Go/
 |-- alert-service-go/
 |-- cve-sync-service-go/
 |-- docker-compose.yml
@@ -85,7 +84,7 @@ secureops-lite/
 `-- architecture.md
 ```
 
-> Naming comment: `risk-service-go` already establishes a pattern in this repo. `alert-service-go` and `cve-sync-service-go` match that style cleanly.
+> Naming comment: `backend-Go/risk-service` is the current focused risk service. Future focused services such as `alert-service-go` and `cve-sync-service-go` should use the same narrow-service style.
 
 ## Project Direction
 
@@ -210,7 +209,7 @@ The dashboard should eventually show:
 
 ### Responsibilities
 
-The Spring Boot backend is the trust boundary and main orchestration layer. It should handle:
+The Go Gin/GORM backend is the trust boundary and main orchestration layer. It should handle:
 
 - registration and login
 - password hashing
@@ -233,27 +232,110 @@ The Spring Boot backend is the trust boundary and main orchestration layer. It s
 
 ### Recommended package layout
 
-The project should stay separated by feature and concern:
+The project should stay separated by layer and concern:
 
 ```text
-backend-springboot/
-`-- src/main/java/.../
-    |-- auth/
-    |-- asset/
-    |-- vulnerability/
-    |-- risk/
-    |-- nvd/
-    |-- ai/
-    |-- chat/
-    |-- alert/
-    |-- sync/
-    |-- security/
-    |-- waf/
-    |-- config/
-    `-- common/
+backend-Go/
+|-- main/
+|   |-- main.go
+|   `-- api/
+|       |-- config/
+|       |-- controller/
+|       |   |-- asset_controller.go
+|       |   |-- auth_controller.go
+|       |   |-- service_interfaces.go
+|       |   `-- vulnerability_controller.go
+|       |-- database/
+|       |-- middleware/
+|       |-- model/
+|       |   |-- asset.go
+|       |   |-- asset_dto.go
+|       |   |-- auth_dto.go
+|       |   |-- risk_dto.go
+|       |   `-- vulnerability_dto.go
+|       |-- repository/
+|       |-- response/
+|       |-- security/
+|       `-- service/
+|           |-- asset_service.go
+|           |-- repository_error_mapping.go
+|           |-- repository_interfaces.go
+|           `-- service_errors.go
+`-- risk-service/
+    |-- main.go
+    `-- api/
+        |-- config/
+        |-- controller/
+        |-- model/
+        |-- response/
+        `-- service/
 ```
 
-> Design comment: `nvd`, `ai`, and `chat` belong in Spring Boot because they depend on authorization, database rules, DTO mapping, and application-level trust decisions. They should not be pushed into Go just because they talk to external services.
+> Design comment: `nvd`, `ai`, and `chat` belong in the main Go backend because they depend on authorization, database rules, DTO mapping, and application-level trust decisions. They should not be pushed into separate services just because they talk to external services.
+
+### Backend layer rules
+
+The main Go backend should keep this dependency direction:
+
+```text
+controller -> service -> repository -> database
+```
+
+Layer responsibilities:
+
+- `controller`: HTTP-only concerns such as Gin context handling, JSON binding, route parameter parsing, and response calls
+- `service`: business validation, risk orchestration, repository-error translation, and use-case coordination
+- `repository`: GORM/database reads and writes only
+- `database`: connection, schema setup, and database lifecycle
+- `response`: HTTP status mapping and safe response messages
+- `middleware`: request filtering and Gin middleware behavior
+- `security`: JWT generation, parsing, and authentication filtering
+- `config`: environment-backed construction of config and dependencies
+
+Interfaces should be owned by the consuming layer:
+
+- `controller/service_interfaces.go` defines the service interfaces controllers need
+- `service/repository_interfaces.go` defines the repository interfaces services need
+- repository structs satisfy those interfaces implicitly
+- service structs satisfy controller interfaces implicitly
+
+This keeps controllers unaware of repository implementations and keeps repositories unaware of HTTP.
+
+### DTO and model placement
+
+The current code keeps database/domain structs and request/response DTO structs in `api/model`:
+
+- database/domain structs: `asset.go`, `user.go`, `vulnerability.go`, `waf_event.go`
+- DTO structs: `asset_dto.go`, `auth_dto.go`, `risk_dto.go`, `vulnerability_dto.go`
+
+DTO files should not live in `controller`. Controllers use DTOs, but DTOs are not controller behavior. A future cleanup may split DTOs into an `api/dto` package, but the current `model/*_dto.go` layout is acceptable as long as controller and service code do not depend on controller-owned DTO types.
+
+### Error handling layout
+
+Package-level `errors.go` files should stay simple:
+
+```go
+type ServiceError struct {
+	Message string
+}
+
+func (e ServiceError) Error() string {
+	return e.Message
+}
+
+var (
+	ErrInvalidRequestData = &ServiceError{Message: "invalid request data"}
+)
+```
+
+Rules:
+
+- `errors.go` files contain only the error struct, its `Error()` method, and sentinel vars
+- repository errors describe repository/database outcomes only
+- service errors are more general business outcomes such as invalid request, conflict, not found, invalid credentials, remote service error, remote rejection, and invalid remote result
+- middleware and security errors follow the same simple sentinel style
+- helper functions and mapping logic belong in normal implementation files, not in `errors.go`
+- config does not need `config_errors.go` until config loading returns `(Config, error)`
 
 ### Core backend flows
 
@@ -278,7 +360,7 @@ backend-springboot/
 1. Angular sends a request with `Authorization: Bearer <token>`.
 2. JWT filter extracts the token.
 3. Backend validates the token.
-4. Spring Security establishes the authenticated context.
+4. Gin authentication middleware establishes the authenticated request context.
 5. Controller logic runs only if access is allowed.
 
 #### Asset creation flow
@@ -296,15 +378,15 @@ This should follow Option B:
 
 1. User creates the asset first.
 2. User clicks `Find Vulnerabilities from NVD`.
-3. Spring Boot loads the asset.
-4. Spring Boot builds a product fingerprint from `vendor`, `product`, `version`, and related metadata.
-5. Spring Boot searches NVD CPE data.
+3. The Go backend loads the asset.
+4. The Go backend builds a product fingerprint from `vendor`, `product`, `version`, and related metadata.
+5. The Go backend searches NVD CPE data.
 6. AI may help rank candidate matches when there is ambiguity.
-7. Spring Boot selects or confirms the best CPE.
-8. Spring Boot queries NVD CVEs using that selected CPE.
-9. Spring Boot maps the returned CVE data to local vulnerability records.
-10. Spring Boot assigns those vulnerabilities to the asset.
-11. Spring Boot triggers risk recalculation.
+7. The Go backend selects or confirms the best CPE.
+8. The Go backend queries NVD CVEs using that selected CPE.
+9. The Go backend maps the returned CVE data to local vulnerability records.
+10. The Go backend assigns those vulnerabilities to the asset.
+11. The Go backend triggers risk recalculation.
 
 > Security comment: the NVD API is the vulnerability source of truth. AI may help rank or explain relevance, but AI should not invent vulnerabilities or silently override official data.
 
@@ -313,17 +395,17 @@ This should follow Option B:
 1. User opens an asset detail page.
 2. User asks a chat question.
 3. Angular sends the question to `POST /api/assets/{id}/chat`.
-4. Spring Boot verifies the user is allowed to view that asset.
-5. Spring Boot loads only the relevant asset context.
-6. Spring Boot builds a constrained prompt from local data plus stored NVD metadata.
-7. Spring Boot calls the AI provider.
-8. Spring Boot returns a read-only natural-language response.
+4. The Go backend verifies the user is allowed to view that asset.
+5. The Go backend loads only the relevant asset context.
+6. The Go backend builds a constrained prompt from local data plus stored NVD metadata.
+7. The Go backend calls the AI provider.
+8. The Go backend returns a read-only natural-language response.
 
 > Security comment: the chatbot should explain and summarize. It should not directly mutate assets, vulnerabilities, assignments, or risk scores.
 
 ## NVD / NIST Integration Design
 
-### Why this belongs in Spring Boot
+### Why this belongs in the Go backend
 
 NVD integration is mostly:
 
@@ -335,7 +417,7 @@ NVD integration is mostly:
 - asset-to-product matching
 - authorization-aware business logic
 
-Those are already Spring Boot responsibilities.
+Those are already main-backend responsibilities.
 
 ### Asset fingerprinting
 
@@ -460,7 +542,7 @@ It should not depend on live internet lookups for every answer.
 
 Go should remain focused on narrow services that are easy to reason about and easy to secure.
 
-### 1. `risk-service-go`
+### 1. `risk-service`
 
 Purpose:
 
@@ -506,7 +588,7 @@ Examples:
 - detect changed NVD records
 - update asset vulnerability freshness state
 
-> Implementation note: this service does not replace Spring Boot as the owner of NVD import business rules. It supports refresh and synchronization work. Spring Boot still owns the core application workflow and persistence decisions.
+> Implementation note: this service does not replace the main Go backend as the owner of NVD import business rules. It supports refresh and synchronization work. The main Go backend still owns the core application workflow and persistence decisions.
 
 ### Why not move NVD or chatbot into Go
 
@@ -519,7 +601,7 @@ Those responsibilities depend heavily on:
 - trust-boundary decisions
 - prompt safety
 
-That makes Spring Boot the better home for them.
+That makes the main Go backend the better home for them.
 
 ## Data Design
 
@@ -658,19 +740,20 @@ An alert can include:
 - keep validation errors readable but not overly revealing
 - return safe `404`, `400`, `401`, and `403` responses where appropriate
 - do not leak raw upstream stack traces or provider secrets
+- map service errors to HTTP responses in the response layer, not in repositories
 
 ## Security Architecture
 
 ### Authentication and authorization
 
 - passwords should be hashed with BCrypt
-- backend routes should be protected with Spring Security and JWT
+- backend routes should be protected with Gin JWT middleware
 - authorization checks must be enforced on the backend for all asset, chat, sync, and alert operations
 - admin-only or elevated routes should be explicitly separated from normal user routes
 
 ### Input validation
 
-- use backend DTO validation annotations
+- validate request DTOs in the backend service layer
 - allowlist structured values like severity, status, criticality, and alert types
 - validate IDs and ownership assumptions before changing records
 - validate all imported upstream data before trusting it
@@ -725,17 +808,17 @@ This should be treated as an extra defensive layer, not a replacement for normal
 `docker-compose.yml` should eventually orchestrate:
 
 - PostgreSQL
-- Spring Boot backend
+- Go Gin/GORM backend
 - Angular frontend
-- `risk-service-go`
+- `risk-service`
 - `alert-service-go`
 - `cve-sync-service-go`
 
 ### Networking rules
 
-- Angular should call Spring Boot
-- Spring Boot should call PostgreSQL and Go services by service name inside Docker
-- Spring Boot should call external APIs over outbound network access
+- Angular should call the Go backend
+- the Go backend should call PostgreSQL and Go services by service name inside Docker
+- the Go backend should call external APIs over outbound network access
 - Angular should never call NVD directly
 - Angular should never call AI providers directly
 - Angular should never call Go services directly
@@ -764,10 +847,10 @@ The intended build order is:
 
 1. finish the current frontend auth and basic styling work
 2. expand the asset model for product-aware matching
-3. add Spring Boot NVD integration
+3. add Go backend NVD integration
 4. add manual `Find Vulnerabilities from NVD`
 5. store imported CVEs locally and assign them to assets
-6. reuse `risk-service-go` to recalculate risk
+6. reuse `risk-service` to recalculate risk
 7. add AI-assisted CPE ranking and CVE relevance review
 8. add `alert-service-go`
 9. add `cve-sync-service-go`
@@ -780,7 +863,7 @@ The intended build order is:
 
 ## Current Status Summary
 
-Based on the current project plan, the backend foundation is in place through Spring Boot to Go risk integration. The next major implementation area is still the Angular frontend, but the longer-term project direction now includes NVD-backed vulnerability import, AI-assisted matching, an asset-scoped chatbot, an alerting service, and a CVE refresh service.
+Based on the current project plan, the backend foundation is in place through Go backend to Go risk-service integration. The next major implementation area is still the Angular frontend, but the longer-term project direction now includes NVD-backed vulnerability import, AI-assisted matching, an asset-scoped chatbot, an alerting service, and a CVE refresh service.
 
 ## Future Improvements
 
