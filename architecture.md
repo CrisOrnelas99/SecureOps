@@ -212,6 +212,7 @@ The Go Gin/GORM backend is the trust boundary and main orchestration layer. It s
 - password hashing
 - JWT generation and validation
 - access control
+- route-level permission middleware for elevated actions
 - request validation
 - asset CRUD
 - vulnerability CRUD
@@ -332,8 +333,10 @@ Rules:
 1. Client sends registration data to `POST /api/auth/register`.
 2. Backend validates required fields and uniqueness rules.
 3. Password is hashed with BCrypt.
-4. User is saved in PostgreSQL.
+4. User is saved in PostgreSQL with the default `user` role.
 5. Backend returns a safe success response without sensitive fields.
+
+> Security comment: registration must not let a client choose `admin`. Admin users should be created through a controlled local, seeded, or admin-only process.
 
 #### Login flow
 
@@ -581,6 +584,20 @@ Those responsibilities depend heavily on:
 
 That makes the main Go backend the better home for them.
 
+### Service-to-service authentication
+
+Future internal Go services should not accept privileged work just because a request reaches their port. When the main backend calls `alert-service-go`, `cve-sync-service-go`, or another focused service, the call should include a server-side service credential.
+
+Recommended first version:
+
+- keep the service credential in environment-backed backend and service configuration
+- send it only from the Go backend to the internal service
+- reject missing or invalid service credentials with a generic `401` or `403`
+- expose `/health` for basic liveness checks without secrets
+- expose `/ready` for dependency readiness checks if the service has dependencies
+
+This is the practical handshake for this project: the backend proves it is an authorized internal caller before the service performs privileged work. More complex options such as mutual TLS can be considered later during hardening.
+
 ## Data Design
 
 ### Main tables
@@ -730,6 +747,8 @@ These asset endpoints are scoped to the authenticated user.
 - backend routes should be protected with Gin JWT middleware
 - authorization checks must be enforced on the backend for all asset, chat, sync, and alert operations
 - admin-only or elevated routes should be explicitly separated from normal user routes
+- admin-only routes should use permission middleware such as `RequireAdmin`
+- user roles must come from server-side user records, not from frontend state or client-submitted role fields
 
 ### Input validation
 
@@ -797,6 +816,7 @@ This should be treated as an extra defensive layer, not a replacement for normal
 
 - Angular should call the Go backend
 - the Go backend should call PostgreSQL and Go services by service name inside Docker
+- internal Go service calls should use service-to-service authentication for privileged actions
 - the Go backend should call external APIs over outbound network access
 - Angular should never call NVD directly
 - Angular should never call AI providers directly

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -15,36 +16,41 @@ type UserLookup interface {
 	FindByUsername(ec *appcontext.GinContext, username string) (model.User, error)
 }
 
-func JwtAuthenticationFilter(jwtService *security.JwtService, users UserLookup) gin.HandlerFunc {
+func JwtAuthenticationFilter(jwtManager *security.JWTManager, users UserLookup) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		header := ctx.GetHeader("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") {
-			security.JwtAuthenticationEntryPoint(ctx)
+			JwtAuthenticationEntryPoint(ctx)
 			return
 		}
 
 		token := strings.TrimPrefix(header, "Bearer ")
-		username, err := jwtService.ExtractUsername(token)
+		username, err := jwtManager.ExtractUsername(token)
 		if err != nil {
-			security.JwtAuthenticationEntryPoint(ctx)
+			JwtAuthenticationEntryPoint(ctx)
 			return
 		}
 
 		ec := appcontext.FromGinContext(ctx)
 		exists, err := users.ExistsByUsername(ec, username)
 		if err != nil || !exists {
-			security.JwtAuthenticationEntryPoint(ctx)
+			JwtAuthenticationEntryPoint(ctx)
 			return
 		}
 
 		user, err := users.FindByUsername(ec, username)
 		if err != nil {
-			security.JwtAuthenticationEntryPoint(ctx)
+			JwtAuthenticationEntryPoint(ctx)
 			return
 		}
 
 		ctx.Set("username", username)
 		ctx.Set("userID", user.ID)
+		ctx.Set("userRole", user.Role)
 		ctx.Next()
 	}
+}
+
+func JwtAuthenticationEntryPoint(ctx *gin.Context) {
+	ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 }

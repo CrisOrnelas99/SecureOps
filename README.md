@@ -42,6 +42,7 @@ What is already present in the codebase:
 
 - Go Gin/GORM backend foundation
 - JWT-based authentication flow
+- basic role field and admin-only permission middleware foundation
 - asset CRUD backend
 - authenticated users only see and mutate their own assets
 - vulnerability CRUD backend
@@ -97,6 +98,7 @@ That means:
 - Angular should not call AI providers directly
 - Angular should not call Go services directly
 - the Go backend handles authorization, validation, persistence, and external-service coordination
+- future internal Go services should require server-side service authentication before accepting backend calls
 
 ## Main Features
 
@@ -225,6 +227,7 @@ Key security principles in this repository:
 - hash passwords with BCrypt
 - use JWT for authenticated backend access
 - enforce authorization on the backend
+- keep admin-only permissions in backend middleware, not in Angular-only checks
 - validate security-relevant input server-side
 - use DTOs instead of exposing internal entities directly
 - keep secrets out of source control
@@ -281,12 +284,15 @@ Current backend package rules:
 - DTO structs live in `dto/`, separate from controller logic and database models
 - backend uses GORM AutoMigrate at startup instead of maintaining separate SQL migration scripts
 - `errors.go` files stay simple: error struct with `Message string`, one `Error()` method, and sentinel vars
+- `permissions.go` contains route-level permission middleware such as `RequireAdmin`
+- normal registered users default to the `user` role; admin access must not be granted by client-controlled registration data
 - config does not currently need `config_errors.go` because config loading does not return errors yet
 
 Planned additions:
 
 - `alert-service-go/`
 - `cve-sync-service-go/`
+- service-to-service authentication for internal Go service calls, using a server-side shared token or stronger handshake pattern later
 
 ## Running The Current Project
 

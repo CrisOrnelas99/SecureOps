@@ -6,16 +6,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type JwtService struct {
+type JWTManager struct {
 	secret     []byte
 	expiration time.Duration
 }
 
-func NewJwtService(secret string, expiration time.Duration) *JwtService {
-	return &JwtService{secret: []byte(secret), expiration: expiration}
+func NewJWTManager(secret string, expiration time.Duration) *JWTManager {
+	return &JWTManager{secret: []byte(secret), expiration: expiration}
 }
 
-func (s *JwtService) GenerateToken(username string) (string, error) {
+func (s *JWTManager) GenerateToken(username string) (string, error) {
 	now := time.Now()
 	claims := jwt.RegisteredClaims{
 		Subject:   username,
@@ -27,7 +27,7 @@ func (s *JwtService) GenerateToken(username string) (string, error) {
 	return token.SignedString(s.secret)
 }
 
-func (s *JwtService) ExtractUsername(tokenString string) (string, error) {
+func (s *JWTManager) ExtractUsername(tokenString string) (string, error) {
 	claims := &jwt.RegisteredClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		if token.Method != jwt.SigningMethodHS256 {
@@ -43,4 +43,3 @@ func (s *JwtService) ExtractUsername(tokenString string) (string, error) {
 	}
 	return claims.Subject, nil
 }
-

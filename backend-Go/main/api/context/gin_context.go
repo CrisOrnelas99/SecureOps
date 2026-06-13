@@ -77,6 +77,20 @@ func (ec *GinContext) Username() string {
 	return value
 }
 
+func (ec *GinContext) UserRole() string {
+	role, exists := ec.Get("userRole")
+	if !exists {
+		return ""
+	}
+
+	value, ok := role.(string)
+	if !ok {
+		return ""
+	}
+
+	return value
+}
+
 func (ec *GinContext) TransactionID() string {
 	return ec.transactionID
 }

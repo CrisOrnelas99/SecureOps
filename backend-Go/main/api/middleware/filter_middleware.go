@@ -31,4 +31,3 @@ func RequestFilter() gin.HandlerFunc {
 		c.Next()
 	}
 }
-

@@ -12,13 +12,13 @@ import (
 )
 
 // RegisterRoutes centralizes all route registrations for the application.
-func RegisterRoutes(router *gin.Engine, jwtService *security.JwtService, userLookup middleware.UserLookup, authController *AuthController, assetController *AssetController, vulnerabilityController *VulnerabilityController) {
+func RegisterRoutes(router *gin.Engine, jwtManager *security.JWTManager, userLookup middleware.UserLookup, authController *AuthController, assetController *AssetController, vulnerabilityController *VulnerabilityController) {
 	router.GET("/api/health", Health)
 	router.POST("/api/auth/register", appcontext.Wrap(authController.Register))
 	router.POST("/api/auth/login", appcontext.Wrap(authController.Login))
 
 	protected := router.Group("/api")
-	protected.Use(config.SecurityConfig(jwtService, userLookup))
+	protected.Use(config.SecurityConfig(jwtManager, userLookup))
 	{
 		protected.GET("/test/secure", SecureTest)
 

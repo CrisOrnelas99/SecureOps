@@ -36,12 +36,12 @@ func main() {
 		log.Fatalf("database migration failed: %v", err)
 	}
 
-	jwtService := security.NewJwtService(cfg.JWTSecret, cfg.JWTExpiration)
+	jwtManager := security.NewJWTManager(cfg.JWTSecret, cfg.JWTExpiration)
 
 	userRepository := repository.NewUserRepository(gormDB)
 	assetRepository := repository.NewAssetRepository(gormDB)
 	vulnerabilityRepository := repository.NewVulnerabilityRepository(gormDB)
-	authService := service.NewAuthService(jwtService, userRepository)
+	authService := service.NewAuthService(jwtManager, userRepository)
 	assetService := service.NewAssetService(assetRepository)
 	vulnerabilityService := service.NewVulnerabilityService(vulnerabilityRepository)
 
@@ -52,11 +52,12 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.RequestContext())
+	router.Use(middleware.SecurityHeaders())
 	router.Use(middleware.GormMiddleware(gormDB))
 	router.Use(config.CorsConfig())
 	router.Use(middleware.RequestFilter())
 	// Register all routes centrally in the controller package
-	controller.RegisterRoutes(router, jwtService, userRepository, authController, assetController, vulnerabilityController)
+	controller.RegisterRoutes(router, jwtManager, userRepository, authController, assetController, vulnerabilityController)
 
 	log.Printf("Go backend running on :%s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {

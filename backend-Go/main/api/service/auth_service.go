@@ -21,12 +21,12 @@ type AuthService interface {
 }
 
 type authServiceImpl struct {
-	jwtService     *security.JwtService
+	jwtManager     *security.JWTManager
 	userRepository UserRepository
 }
 
-func NewAuthService(jwtService *security.JwtService, userRepository UserRepository) AuthService {
-	return &authServiceImpl{jwtService: jwtService, userRepository: userRepository}
+func NewAuthService(jwtManager *security.JWTManager, userRepository UserRepository) AuthService {
+	return &authServiceImpl{jwtManager: jwtManager, userRepository: userRepository}
 }
 
 func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.RegisterRequest) error {
@@ -58,6 +58,7 @@ func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.Regist
 	return s.translateRepositoryError(s.userRepository.Save(ec, model.User{
 		Username:     request.Username,
 		Email:        request.Email,
+		Role:         model.RoleUser,
 		PasswordHash: string(hash),
 	}))
 }
@@ -79,11 +80,11 @@ func (s *authServiceImpl) Login(ec *appcontext.GinContext, request dto.LoginRequ
 		return dto.LoginResponse{}, ErrInvalidCredentials
 	}
 
-	if s.jwtService == nil {
-		return dto.LoginResponse{}, fmt.Errorf("missing jwt service")
+	if s.jwtManager == nil {
+		return dto.LoginResponse{}, fmt.Errorf("missing jwt manager")
 	}
 
-	token, err := s.jwtService.GenerateToken(user.Username)
+	token, err := s.jwtManager.GenerateToken(user.Username)
 	if err != nil {
 		return dto.LoginResponse{}, err
 	}

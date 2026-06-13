@@ -10,5 +10,5 @@ func (e MiddlewareError) Error() string {
 
 var (
 	ErrSuspiciousRequest = &MiddlewareError{Message: "Request blocked"}
+	ErrForbidden         = &MiddlewareError{Message: "forbidden"}
 )
-
