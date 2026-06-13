@@ -1,22 +1,20 @@
 # SecureOps Lite
 
-SecureOps Lite is a security-focused full-stack application for tracking assets, importing vulnerability intelligence, calculating risk, and explaining security posture in one place.
+SecureOps Lite is a security-focused full-stack platform for inventorying assets, importing vulnerability intelligence, and explaining risk across organizations, applications, home networks, and other inventory sources.
 
-The project is being built around a practical cybersecurity workflow:
+The project is designed as a practical cybersecurity workflow that combines:
 
-- store assets with meaningful product details
-- import relevant CVEs from NVD / NIST
-- assign vulnerabilities to affected assets
-- track basic asset risk fields for later scoring work
-- surface important alert conditions
-- refresh vulnerability intelligence over time
-- explain asset risk through an asset-aware chatbot
+- asset inventory with product-aware details
+- vulnerability intelligence from NVD/NIST
+- AI-assisted asset extraction from pasted text or file content
+- an asset-scoped chatbot for security posture explanation
+- a secure backend trust boundary with centralized authorization
 
-This is not intended to be a full SIEM, scanner, or enterprise vulnerability platform. The goal is a focused application that shows how secure backend design, external vulnerability data, AI-assisted matching, and small supporting services can work together in one system.
+This is not intended to be a full SIEM or enterprise vulnerability platform. The goal is a focused application that shows how secure design, external vulnerability data, and AI-assisted workflows can work together in one system.
 
-## What The Product Does
+## What SecureOps Lite Does
 
-SecureOps Lite is designed to help a user answer questions like:
+SecureOps Lite helps answer questions like:
 
 - What assets do I have?
 - Which vulnerabilities affect them?
@@ -25,50 +23,30 @@ SecureOps Lite is designed to help a user answer questions like:
 - Which vulnerabilities came from official NVD data?
 - What changed after an import, refresh, or recalculation?
 
-The core product direction is:
+The platform is intended to support a broader inventory model than traditional organization-only tools. It can represent:
 
-- Angular frontend for the user interface
-- Go with Gin and GORM as the main backend and trust boundary
-- PostgreSQL for persistence
-- focused Go services for narrow supporting tasks when they are added later
-- NVD / NIST as the vulnerability source of truth
-- AI as a helper for matching, ranking, and explanation
+- organizations and offices
+- application portfolios
+- home network device inventories
+- raw asset lists imported from manifests, documents, or scan outputs
 
-## Current Repository Status
+## Architecture Overview
 
-This repository is in active development.
+The system is intentionally split into clear responsibilities:
 
-What is already present in the codebase:
+- Angular handles the browser UI
+- the Go Gin/GORM backend handles authentication, validation, business logic, data orchestration, AI orchestration, and chat orchestration
+- PostgreSQL stores application data
+- focused Go services handle narrow, isolated tasks
 
-- Go Gin/GORM backend foundation
-- JWT-based authentication flow
-- basic role field and admin-only permission middleware foundation
-- asset CRUD backend
-- authenticated users only see and mutate their own assets
-- vulnerability CRUD backend
-- asset-to-vulnerability assignment backend
-- layered backend boundaries with controller -> service -> repository -> database flow
-- direct controller service injection from `main.go`
-- service interfaces and service-owned repository interfaces
-- package-local sentinel error files for repository, service, middleware, and security concerns
-- GORM AutoMigrate schema provisioning at backend startup
-- Docker Compose for PostgreSQL and the backend
-- Angular frontend project structure
+The backend remains the main security and orchestration boundary. That means:
 
-What is planned next or still in progress:
+- Angular never calls NVD directly
+- Angular never calls AI providers directly
+- Angular never calls internal Go services directly
+- authorization, validation, and persistence are enforced server-side
 
-- Angular authentication and main screens
-- NVD / NIST vulnerability import
-- risk scoring implementation
-- AI-assisted product matching and relevance support
-- asset-scoped chatbot
-- `alert-service-go`
-- `cve-sync-service-go`
-- full multi-service Docker integration
-
-If you want the implementation-level plan, see `Roadmap.md` and `architecture.md`.
-
-## Planned Architecture
+Planned architecture:
 
 ```text
 Browser
@@ -81,6 +59,8 @@ Go Gin/GORM API
   |
   +--> PostgreSQL
   |
+  +--> organization/application/home network scoping
+  |
   +--> alert-service-go
   |
   +--> cve-sync-service-go
@@ -90,69 +70,57 @@ Go Gin/GORM API
   `--> AI provider API
 ```
 
-The backend remains the main security and orchestration boundary.
-
-That means:
-
-- Angular should not call NVD directly
-- Angular should not call AI providers directly
-- Angular should not call Go services directly
-- the Go backend handles authorization, validation, persistence, and external-service coordination
-- future internal Go services should require server-side service authentication before accepting backend calls
-
-## Main Features
-
-### Authentication
-
-The application is designed around:
-
-- user registration
-- user login
-- JWT-based authentication
-- protected backend routes
-- protected frontend routes
+## Key Features
 
 ### Asset Inventory
 
-Assets are intended to hold both internal tracking information and product identity information.
+Assets are modeled as both business inventory items and product fingerprints. Example fields include:
 
-Examples of asset fields:
-
-- asset name
-- asset type
+- name
+- type
 - vendor
 - product
 - version
-- IP address
 - operating system
+- IP address
 - owner
 - criticality
 - risk score
 - risk level
 
-Why the product fields matter:
+Product-aware details matter because labels like `Firewall-01` are not sufficient for vulnerability matching. To generate useful NVD results, the system needs vendor/product/version context.
 
-An internal label like `Firewall-01` is useful for inventory, but not enough for vulnerability matching. To pull relevant CVEs from NVD, the system needs product-aware fields such as `vendor`, `product`, and `version`.
+### Vulnerability Management
 
-### Vulnerability Tracking
-
-Vulnerabilities can exist in the system in two ways:
+Vulnerabilities can be:
 
 - manually created records
-- imported records from NVD / NIST
+- imported records from NVD/NIST
 
-Vulnerability records are intended to include:
+Records are intended to capture:
 
 - CVE ID
 - title
 - severity
 - description
 - status
-- CVSS details where available
+- CVSS details
 - source metadata
-- publish and update timestamps where useful
+- publish and update timestamps
 
-### NVD / NIST Vulnerability Import
+### AI-Assisted Ingestion
+
+SecureOps Lite is intended to accept raw asset descriptions from pasted text or file content and convert them into structured assets.
+
+Supported input examples include:
+
+- `package.json` dependency metadata
+- network asset lists and topology documents
+- local scan exports and inventory notes
+
+The ingestion agent is intended to run entirely on the backend, where raw input is validated, sanitized, and converted into asset candidates before persistence.
+
+### NVD / NIST Integration
 
 The planned import flow is:
 
@@ -163,75 +131,98 @@ The planned import flow is:
 5. import matching CVEs
 6. store them locally
 7. assign them to the asset
-8. update risk data later when risk scoring is reintroduced
+8. update risk data later when risk scoring is introduced
 
-NVD is intended to be the vulnerability source of truth.
+NVD/NIST is the vulnerability source of truth. AI may assist with normalization, ranking, and explanation, but it is not intended to invent CVEs or override official data.
 
-AI may help with:
+### Remediation Workflow
 
-- product name normalization
-- candidate CPE ranking
-- CVE relevance review
-- user-facing explanation
+The future roadmap includes a remediation workflow that supports:
 
-AI is not intended to invent vulnerabilities or silently override official NVD data.
+- work orders tied to organization, asset, and vulnerability
+- status, priority, due date, and remediation metadata
+- checklist items for remediation steps
+- suppression, exception, false-positive, and risk-acceptance handling
+- remediation timelines and write-ups
+- internal comments and discussion threads
+- chatbot-ready context for remediation history and current state
 
 ### Risk Scoring
 
-Risk scoring is planned for a later phase. The current base app keeps asset risk fields available, but scoring implementation is deferred for now.
+Risk scoring is planned for a later phase. Initial asset fields are prepared for scoring, but the scoring engine is deferred until after the core inventory and vulnerability flows are stable.
 
-Example factors:
+Example risk factors:
 
-- number of critical vulnerabilities
-- number of high vulnerabilities
-- number of medium vulnerabilities
-- number of low vulnerabilities
+- critical vulnerability count
+- high vulnerability count
+- medium vulnerability count
+- low vulnerability count
 - asset criticality
 
-The risk score is intended to help prioritize attention across assets.
+### Alerting and CVE Refresh
 
-### Alerting
+Future services include:
 
-The planned `alert-service-go` will focus on security events such as:
-
-- newly imported critical CVEs
-- assets crossing a risk threshold
-- repeated sync failures
-- important state changes that should be surfaced in the UI
-
-### CVE Refresh
-
-The planned `cve-sync-service-go` will refresh locally imported vulnerability data so the application does not drift too far from upstream NVD changes over time.
+- `alert-service-go` for security event notification
+- `cve-sync-service-go` for refreshing imported CVEs so local data remains aligned with upstream NVD changes
 
 ### Asset Chatbot
 
-The planned chatbot is intended to be:
-
-- asset-scoped
-- grounded in local application data
-- read-only in the first version
-
-It should answer questions like:
+A planned asset-scoped chatbot will provide read-only explanations for security posture using local application data. Example questions include:
 
 - What vulnerabilities affect this asset?
 - Why is this asset critical?
 - Which CVEs matter most here?
 - What changed after the last import or sync?
 
+## Current Status
+
+The repository is in active development.
+
+Already present in the codebase:
+
+- Go Gin/GORM backend foundation
+- JWT-based authentication
+- role and permission middleware foundation
+- asset CRUD backend
+- vulnerability CRUD backend
+- asset-to-vulnerability assignment flow
+- controller -> service -> repository layering
+- GORM AutoMigrate schema provisioning
+- Docker Compose support for PostgreSQL and backend
+- Angular frontend project structure
+
+Planned next work:
+
+- organization- and application-aware multi-tenant scoping
+- frontend authentication and main screens
+- NVD/NIST vulnerability import
+- AI-assisted product matching and ingestion
+- asset-scoped chatbot
+- remediation workflow management
+- `alert-service-go`
+- `cve-sync-service-go`
+- full multi-service Docker integration
+- AWS service integration in a later phase
+
+For implementation-level details, see `Roadmap.md` and `architecture.md`.
+
 ## Security Approach
 
-SecureOps Lite is being built with a security-first mindset.
+SecureOps Lite is built with a security-first mindset.
 
-Key security principles in this repository:
+Core security principles:
 
 - hash passwords with BCrypt
-- use JWT for authenticated backend access
+- use JWT for backend authentication
 - enforce authorization on the backend
-- keep admin-only permissions in backend middleware, not in Angular-only checks
+- keep admin-only permissions in backend middleware, not frontend-only checks
 - validate security-relevant input server-side
+- keep AI provider keys and external service credentials on the server
 - use DTOs instead of exposing internal entities directly
 - keep secrets out of source control
 - use environment-based configuration
+
 - keep AI and external API keys server-side only
 - treat AI output as advisory text, not trusted system truth
 - keep external vulnerability data grounded in official NVD records
@@ -367,7 +358,7 @@ Implemented API areas:
 - `PUT /api/assets/{id}`
 - `DELETE /api/assets/{id}`
 
-Asset endpoints are scoped to the authenticated user.
+Asset endpoints are currently scoped to the authenticated user. The future multi-tenant model will scope assets, vulnerabilities, work orders, and comments to the organization the user belongs to.
 
 ### Vulnerabilities
 
@@ -387,6 +378,27 @@ Planned API areas:
 - `POST /api/assets/{id}/import-nvd-vulnerabilities`
 - `GET /api/assets/{id}/alerts`
 - `POST /api/assets/{id}/chat`
+- `POST /api/organizations/{orgId}/work-orders`
+- `GET /api/organizations/{orgId}/work-orders`
+- `GET /api/organizations/{orgId}/work-orders/{id}`
+- `PATCH /api/organizations/{orgId}/work-orders/{id}`
+- `DELETE /api/organizations/{orgId}/work-orders/{id}`
+- `POST /api/organizations/{orgId}/work-orders/{id}/checklist-items`
+- `PATCH /api/organizations/{orgId}/work-orders/{id}/checklist-items/{itemId}`
+- `DELETE /api/organizations/{orgId}/work-orders/{id}/checklist-items/{itemId}`
+- `POST /api/organizations/{orgId}/work-orders/{id}/exceptions`
+- `PATCH /api/organizations/{orgId}/work-orders/{id}/exceptions/{exceptionId}`
+- `DELETE /api/organizations/{orgId}/work-orders/{id}/exceptions/{exceptionId}`
+- `POST /api/organizations/{orgId}/work-orders/{id}/entries`
+- `GET /api/organizations/{orgId}/work-orders/{id}/entries`
+- `PATCH /api/organizations/{orgId}/work-orders/{id}/entries/{entryId}`
+- `DELETE /api/organizations/{orgId}/work-orders/{id}/entries/{entryId}`
+- `POST /api/organizations/{orgId}/assets/{assetId}/comments`
+- `POST /api/organizations/{orgId}/vulnerabilities/{vulnerabilityId}/comments`
+- `POST /api/organizations/{orgId}/work-orders/{id}/comments`
+- `GET /api/organizations/{orgId}/assets/{assetId}/comments`
+- `GET /api/organizations/{orgId}/vulnerabilities/{vulnerabilityId}/comments`
+- `GET /api/organizations/{orgId}/work-orders/{id}/comments`
 - `POST /api/sync/nvd`
 - `GET /api/alerts`
 - `PATCH /api/alerts/{id}/acknowledge`
@@ -395,6 +407,7 @@ Planned API areas:
 
 The main data model is built around:
 
+- `organizations`
 - `users`
 - `assets`
 - `vulnerabilities`
@@ -403,6 +416,11 @@ The main data model is built around:
 Likely additions:
 
 - `alerts`
+- `work_orders`
+- `work_order_checklist_items`
+- `vulnerability_exceptions`
+- `remediation_entries`
+- `comments`
 - optional `chat_sessions`
 - optional `chat_messages`
 - optional sync history tables

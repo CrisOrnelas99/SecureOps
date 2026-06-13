@@ -10,15 +10,19 @@ This document explains how SecureOps Lite is intended to work, how its parts fit
 
 SecureOps Lite is a full-stack cybersecurity application for:
 
+- organizing assets by organization, office, application, home network, or other inventory source
 - tracking assets
 - importing relevant CVEs from NVD/NIST
 - assigning vulnerabilities to affected assets
+- managing work orders and remediation workflows
 - tracking asset risk fields for later scoring work
 - monitoring risk changes over time
 - refreshing vulnerability intelligence
 - raising alerts for important security events
 - presenting the current security picture in a dashboard
 - explaining asset security posture through an asset-aware chatbot
+
+The system is also designed to ingest raw asset descriptions from pasted text or file contents, such as package manifests, network inventory documents, or local scan exports. An AI-assisted ingestion agent will convert that content into normalized asset records and place them into the appropriate organizational, application, or home network scope.
 
 The system is intentionally split into clear responsibilities:
 
@@ -42,6 +46,8 @@ Go Gin/GORM API
   |
   +--> PostgreSQL
   |
+  +--> organization/application/home network scoping
+  |
   +--> alert-service-go
   |
   +--> cve-sync-service-go
@@ -57,10 +63,11 @@ Go Gin/GORM API
 2. Angular sends HTTP requests to the Go backend API.
 3. The Go backend authenticates the request, validates input, and runs business logic.
 4. The Go backend reads or writes data in PostgreSQL as needed.
-5. For NVD import flows, the Go backend calls NVD APIs and optionally an AI-assisted matching layer.
-6. For security events, the Go backend may notify `alert-service-go`.
-7. For scheduled CVE refresh work, the Go backend coordinates with or receives updates from `cve-sync-service-go`.
-8. The Go backend returns a safe response to Angular.
+5. The Go backend checks organization membership and scoped authorization before touching data.
+6. For NVD import flows, the Go backend calls NVD APIs and optionally an AI-assisted matching layer.
+7. For security events, the Go backend may notify `alert-service-go`.
+8. For scheduled CVE refresh work, the Go backend coordinates with or receives updates from `cve-sync-service-go`.
+9. The Go backend returns a safe response to Angular.
 
 > Security comment: Angular should never call NVD directly, never call AI providers directly, and never call Go services directly. This keeps secrets on the server side and keeps authorization decisions centralized.
 
@@ -89,12 +96,14 @@ The updated project idea is:
 
 SecureOps Lite is a cybersecurity asset risk platform that:
 
+- separates assets by organization, application portfolio, home network, or other inventory source
 - stores technical asset details
 - identifies likely product matches for those assets
 - imports vulnerabilities from NVD/NIST
 - assigns imported CVEs to assets
+- manages remediation work orders and workflow notes
 - can add risk scoring later after the base app is stable
-- uses AI to improve product matching and relevance review
+- uses AI to improve product matching, relevance review, and raw-text/file asset ingestion
 - uses a chatbot to explain asset risk and vulnerability posture in plain English
 
 > Architecture comment: the biggest shift is that vulnerabilities are no longer only manually entered data. They become intelligence-backed records that can be imported, refreshed, prioritized, explained, and monitored.
@@ -105,6 +114,7 @@ SecureOps Lite is a cybersecurity asset risk platform that:
 
 The Angular frontend should be responsible for:
 
+- organization-aware navigation when a user belongs to more than one organization
 - login and registration screens
 - route navigation
 - dashboard rendering
@@ -114,6 +124,7 @@ The Angular frontend should be responsible for:
 - NVD import actions
 - alert and risk views
 - chatbot UI for asset-level questions
+- work order and remediation screens when those workflows are introduced
 - calling backend APIs through Angular services
 - attaching JWTs to protected requests
 
@@ -213,12 +224,17 @@ The Go Gin/GORM backend is the trust boundary and main orchestration layer. It s
 - JWT generation and validation
 - access control
 - route-level permission middleware for elevated actions
+- organization membership and tenant scoping
 - request validation
+- organization CRUD and membership-aware data access
 - asset CRUD
 - vulnerability CRUD
 - asset-vulnerability assignment
+- work order and remediation workflow orchestration
+- notes, comments, and exception handling
 - NVD integration
 - AI-assisted product and CVE relevance support
+- AI agent ingestion for raw text and file-based asset extraction
 - chatbot orchestration
 - alert service integration
 - sync job coordination
@@ -248,16 +264,42 @@ backend-Go/
 |       |-- middleware/
 |       |-- model/
 |       |   |-- asset.go
+|       |   |-- organization.go
 |       |   |-- user.go
 |       |   `-- vulnerability.go
 |       |-- repository/
 |       |-- security/
 |       |-- service/
 |           |-- asset_service.go
-|           |-- repository_error_mapping.go
+|           |-- service_helpers.go
 |           |-- repository_interfaces.go
 |           `-- service_errors.go
 |       `-- utils/
+```
+
+Future workflow data files can join the model and DTO layers as needed:
+
+```text
+api/model/
+|-- work_order.go
+|-- work_order_checklist_item.go
+|-- vulnerability_exception.go
+|-- remediation_entry.go
+`-- comment.go
+```
+
+Future workflow-focused packages can live alongside the existing layers, such as:
+
+```text
+api/
+|-- organizations/
+|-- workflow/
+|-- work_orders/
+|-- checklist_items/
+|-- vulnerability_exceptions/
+|-- remediation_notes/
+|-- comments/
+`-- chatbot_context/
 ```
 
 > Design comment: `nvd`, `ai`, and `chat` belong in the main Go backend because they depend on authorization, database rules, DTO mapping, and application-level trust decisions. They should not be pushed into separate services just because they talk to external services.
@@ -474,6 +516,20 @@ AI should not:
 - bypass authorization
 - silently auto-import weak matches with no confidence threshold
 
+### AI Agent Architecture for Asset Ingestion
+
+The AI ingestion agent should be implemented as a backend-only orchestration layer that accepts sanitized raw text or file content and converts it into structured asset records.
+
+Key principles:
+
+- The frontend sends only user-provided text or file payload metadata to the backend. AI provider keys, prompts, and routing remain server-side only.
+- The backend validates and sanitizes incoming content before using AI, including file type restrictions, size limits, and secret-stripping from pasted data.
+- Supported inputs should include package manifests, network asset lists, inventory documents, local scan exports, and other free-form asset descriptions.
+- The agent should extract asset metadata such as name, type, vendor, product, version, operating system, IP address, ownership, environment, and confidence metadata.
+- The backend should map extracted results into the correct scope: organization, application portfolio, home network, or other inventory context.
+- Audit logs should record ingestion input sources, AI-extracted outputs, and the user who initiated the ingestion.
+- AI-generated suggestions should be treated as guidance. The backend should apply deterministic rules and review thresholds before committing extracted assets into the system.
+
 ### Recommended pattern
 
 1. deterministically query candidate CPEs from NVD
@@ -496,21 +552,31 @@ The chatbot should answer asset-specific questions such as:
 - what changed after a sync or recalculation
 - why a vulnerability was imported
 - what the risk score means in plain English
+- what work order is active for this asset
+- which checklist items are done or still open
+- what remediation notes or comments the team has already written
 
 ### Scope
 
-The first version should be asset-scoped, not global.
+The first version should be organization-scoped and asset-scoped, not global.
 
 Recommended endpoint:
 
 - `POST /api/assets/{id}/chat`
+- later: `POST /api/organizations/{orgId}/chat/context`
 
 ### Grounding strategy
 
 The chatbot should answer using:
 
+- organization membership and tenant scope
 - asset data from PostgreSQL
 - assigned vulnerability data
+- CVE details and source metadata
+- work order status and priority
+- checklist state
+- remediation entries
+- comments and team notes
 - stored NVD metadata
 - risk score and risk level
 - alert summaries if useful
@@ -602,10 +668,16 @@ This is the practical handshake for this project: the backend proves it is an au
 
 ### Main tables
 
+- `organizations`
 - `users`
 - `assets`
 - `vulnerabilities`
 - `asset_vulnerabilities`
+- `work_orders`
+- `work_order_checklist_items`
+- `vulnerability_exceptions`
+- `remediation_entries`
+- `comments`
 - `alerts`
 - optional `chat_sessions`
 - optional `chat_messages`
@@ -613,10 +685,13 @@ This is the practical handshake for this project: the backend proves it is an au
 
 ### Relationships
 
-- one user can create many assets
-- asset CRUD is scoped by `assets.user_id`
+- one organization can own many users, assets, vulnerabilities, work orders, comments, and remediation records
+- a user can belong to one or more organizations depending on the tenancy model
+- asset CRUD is scoped by organization membership and asset ownership rules
 - one asset can have many vulnerabilities
 - one vulnerability can be assigned to many assets
+- one work order belongs to one organization and usually one asset and one vulnerability context
+- one work order can have many checklist items, comments, timeline entries, and exception records
 - one asset can produce many alerts
 - one asset can have many chat messages if chat persistence is enabled
 
@@ -625,6 +700,7 @@ This is the practical handshake for this project: the backend proves it is an au
 An asset should include fields such as:
 
 - `id`
+- `organizationId`
 - `userId` stored internally as `assets.user_id`
 - `name`
 - `type`
@@ -649,6 +725,7 @@ An asset should include fields such as:
 A vulnerability should include fields such as:
 
 - `id`
+- `organizationId`
 - `cveId`
 - `title`
 - `severity`
@@ -664,6 +741,125 @@ A vulnerability should include fields such as:
 - `createdAt`
 - `updatedAt`
 
+### Organization shape
+
+An organization should include fields such as:
+
+- `id`
+- `name`
+- `slug`
+- `status`
+- `createdAt`
+- `updatedAt`
+
+### Work order shape
+
+A work order should include fields such as:
+
+- `id`
+- `organizationId`
+- `assetId`
+- `vulnerabilityId`
+- `assignedUserId`
+- `status`
+- `priority`
+- `dueDate`
+- `remediationPlan`
+- `verificationNotes`
+- `resolutionSummary`
+- `createdAt`
+- `updatedAt`
+
+Suggested statuses:
+
+- `open`
+- `verifying`
+- `remediation_planning`
+- `patching`
+- `testing`
+- `resolved`
+- `closed`
+- `suppressed`
+- `exception_granted`
+
+### Checklist item shape
+
+A checklist item should include fields such as:
+
+- `id`
+- `workOrderId`
+- `title`
+- `description`
+- `completed`
+- `completedBy`
+- `completedAt`
+- `sortOrder`
+- `notes`
+- `createdAt`
+- `updatedAt`
+
+### Exception shape
+
+A vulnerability exception should include fields such as:
+
+- `id`
+- `organizationId`
+- `workOrderId`
+- `assetId`
+- `vulnerabilityId`
+- `status`
+- `reason`
+- `approvedBy`
+- `expirationDate`
+- `notes`
+- `createdAt`
+- `updatedAt`
+
+Suggested exception statuses:
+
+- `active`
+- `suppressed`
+- `exception_granted`
+- `false_positive`
+- `risk_accepted`
+- `remediated`
+
+### Remediation entry shape
+
+A remediation entry should include fields such as:
+
+- `id`
+- `workOrderId`
+- `authorId`
+- `title`
+- `bodyMarkdown`
+- `entryType`
+- `createdAt`
+- `updatedAt`
+
+Suggested entry types:
+
+- `investigation`
+- `remediation_plan`
+- `patch_notes`
+- `test_results`
+- `resolution`
+- `general_note`
+
+### Comment shape
+
+A comment should include fields such as:
+
+- `id`
+- `organizationId`
+- `assetId`
+- `vulnerabilityId`
+- `workOrderId`
+- `authorId`
+- `body`
+- `createdAt`
+- `updatedAt`
+
 ### Asset-vulnerability assignment shape
 
 The join record can eventually hold useful metadata such as:
@@ -675,7 +871,7 @@ The join record can eventually hold useful metadata such as:
 - `lastVerifiedAt`
 - `isManuallyReviewed`
 
-> Design comment: this metadata matters because it separates “this CVE exists in NVD” from “this CVE is relevant to this specific asset.”
+> Design comment: this metadata matters because it separates "this CVE exists in NVD" from "this CVE is relevant to this specific asset."
 
 ### Alert shape
 
@@ -708,7 +904,7 @@ An alert can include:
 - `POST /api/assets/{assetId}/vulnerabilities/{vulnerabilityId}`
 - `DELETE /api/assets/{assetId}/vulnerabilities/{vulnerabilityId}`
 
-These asset endpoints are scoped to the authenticated user.
+These asset endpoints are currently scoped to the authenticated user. The multi-tenant direction is to scope these by organization membership and enforce that users only reach data in organizations they belong to.
 
 ### Implemented vulnerability endpoints
 
@@ -723,6 +919,27 @@ These asset endpoints are scoped to the authenticated user.
 - `POST /api/assets/{id}/import-nvd-vulnerabilities`
 - `GET /api/assets/{id}/alerts`
 - `POST /api/assets/{id}/chat`
+- `POST /api/organizations/{orgId}/work-orders`
+- `GET /api/organizations/{orgId}/work-orders`
+- `GET /api/organizations/{orgId}/work-orders/{id}`
+- `PATCH /api/organizations/{orgId}/work-orders/{id}`
+- `DELETE /api/organizations/{orgId}/work-orders/{id}`
+- `POST /api/organizations/{orgId}/work-orders/{id}/checklist-items`
+- `PATCH /api/organizations/{orgId}/work-orders/{id}/checklist-items/{itemId}`
+- `DELETE /api/organizations/{orgId}/work-orders/{id}/checklist-items/{itemId}`
+- `POST /api/organizations/{orgId}/work-orders/{id}/exceptions`
+- `PATCH /api/organizations/{orgId}/work-orders/{id}/exceptions/{exceptionId}`
+- `DELETE /api/organizations/{orgId}/work-orders/{id}/exceptions/{exceptionId}`
+- `POST /api/organizations/{orgId}/work-orders/{id}/entries`
+- `GET /api/organizations/{orgId}/work-orders/{id}/entries`
+- `PATCH /api/organizations/{orgId}/work-orders/{id}/entries/{entryId}`
+- `DELETE /api/organizations/{orgId}/work-orders/{id}/entries/{entryId}`
+- `POST /api/organizations/{orgId}/assets/{assetId}/comments`
+- `POST /api/organizations/{orgId}/vulnerabilities/{vulnerabilityId}/comments`
+- `POST /api/organizations/{orgId}/work-orders/{id}/comments`
+- `GET /api/organizations/{orgId}/assets/{assetId}/comments`
+- `GET /api/organizations/{orgId}/vulnerabilities/{vulnerabilityId}/comments`
+- `GET /api/organizations/{orgId}/work-orders/{id}/comments`
 - `POST /api/sync/nvd`
 - `GET /api/alerts`
 - `PATCH /api/alerts/{id}/acknowledge`
@@ -745,7 +962,8 @@ These asset endpoints are scoped to the authenticated user.
 
 - passwords should be hashed with BCrypt
 - backend routes should be protected with Gin JWT middleware
-- authorization checks must be enforced on the backend for all asset, chat, sync, and alert operations
+- authorization checks must be enforced on the backend for all organization, asset, chat, sync, work order, comment, and alert operations
+- organization membership must be checked before any org-scoped data is returned or mutated
 - admin-only or elevated routes should be explicitly separated from normal user routes
 - admin-only routes should use permission middleware such as `RequireAdmin`
 - user roles must come from server-side user records, not from frontend state or client-submitted role fields
@@ -754,6 +972,7 @@ These asset endpoints are scoped to the authenticated user.
 
 - validate request DTOs in the backend service layer
 - allowlist structured values like severity, status, criticality, and alert types
+- allowlist workflow and exception statuses instead of accepting free-form strings
 - validate IDs and ownership assumptions before changing records
 - validate all imported upstream data before trusting it
 
@@ -844,18 +1063,23 @@ Typical values should include:
 The intended build order is:
 
 1. finish the current frontend auth and basic styling work
-2. expand the asset model for product-aware matching
-3. add Go backend NVD integration
-4. add manual `Find Vulnerabilities from NVD`
-5. store imported CVEs locally and assign them to assets
-6. add risk scoring after the base app is stable
-7. add AI-assisted CPE ranking and CVE relevance review
-8. add `alert-service-go`
-9. add `cve-sync-service-go`
-10. add the asset-scoped chatbot
-11. add dashboard support for alerts, sync, and risk trends
-12. do Docker integration across all services
-13. do hardening, access review, and end-to-end testing
+2. add organization and membership-aware backend foundations
+3. scope asset, vulnerability, and assignment access by organization
+4. add work order, checklist, exception, remediation entry, and comment models
+5. expose org-scoped workflow endpoints
+6. expand the asset model for product-aware matching
+7. add Go backend NVD integration
+8. add manual `Find Vulnerabilities from NVD`
+9. store imported CVEs locally and assign them to assets
+10. add risk scoring after the base app is stable
+11. add AI-assisted CPE ranking and CVE relevance review
+12. add `alert-service-go`
+13. add `cve-sync-service-go`
+14. add the chatbot context layer
+15. add the asset-scoped and org-scoped chatbot experiences
+16. add dashboard support for alerts, sync, workflow, and risk trends
+17. do Docker integration across all services
+18. do hardening, access review, and end-to-end testing
 
 `Roadmap.md` should remain the canonical checklist for what is done and what is next.
 
