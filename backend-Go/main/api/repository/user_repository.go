@@ -51,6 +51,9 @@ func (r *UserRepository) Save(ec *appcontext.GinContext, user model.User) error 
 
 	err := r.database(ec).WithContext(ec.RequestContext()).Create(&user).Error
 	if err != nil {
+		if utils.IsUniqueViolation(err) {
+			return fmt.Errorf("%w: %w", ErrDuplicateData, err)
+		}
 		if utils.IsForeignKeyViolation(err) {
 			return fmt.Errorf("%w: %w", ErrInvalidReference, err)
 		}

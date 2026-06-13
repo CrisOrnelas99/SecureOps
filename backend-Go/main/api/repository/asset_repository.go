@@ -104,7 +104,12 @@ func (r *AssetRepository) DeleteForUser(ec *appcontext.GinContext, id int64, use
 		return model.Asset{}, err
 	}
 
-	err = r.database(ec).WithContext(ec.RequestContext()).Delete(&asset).Error
+	err = r.database(ec).WithContext(ec.RequestContext()).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("DELETE FROM asset_vulnerabilities WHERE asset_id = ?", asset.ID).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&asset).Error
+	})
 	if err != nil {
 		return model.Asset{}, fmt.Errorf("%w: %w", ErrDeleteFailed, err)
 	}
@@ -125,6 +130,9 @@ func (r *AssetRepository) AssignVulnerabilityForUser(ec *appcontext.GinContext, 
 
 	err = r.database(ec).WithContext(ec.RequestContext()).Model(&asset).Association("Vulnerabilities").Append(&vulnerability)
 	if err != nil {
+		if utils.IsUniqueViolation(err) {
+			return model.Asset{}, ErrDuplicateAssignment
+		}
 		if utils.IsForeignKeyViolation(err) {
 			return model.Asset{}, fmt.Errorf("%w: %w", ErrInvalidReference, err)
 		}

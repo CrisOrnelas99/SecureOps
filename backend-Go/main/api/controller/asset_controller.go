@@ -173,28 +173,28 @@ func parseID(value string) (int64, error) {
 }
 
 func handleAssetServiceError(ec *appcontext.GinContext, err error, fallbackMessage string) bool {
-	var validationErr *service.ValidationError
-	if errors.As(err, &validationErr) {
-		HandleError(ec, http.StatusBadRequest, err, validationErr.Error())
-		return true
-	}
-
-	var notFoundErr *service.NotFoundError
-	if errors.As(err, &notFoundErr) {
-		HandleError(ec, http.StatusNotFound, err, "Asset not found")
-		return true
-	}
-
-	var unauthorizedErr *service.UnauthorizedError
-	if errors.As(err, &unauthorizedErr) {
-		HandleError(ec, http.StatusUnauthorized, err, unauthorizedErr.Error())
-		return true
-	}
-
-	var forbiddenErr *service.ForbiddenError
-	if errors.As(err, &forbiddenErr) {
-		HandleError(ec, http.StatusForbidden, err, forbiddenErr.Error())
-		return true
+	var serviceErr *service.ServiceError
+	if errors.As(err, &serviceErr) {
+		if errors.Is(err, service.ErrInvalidRequestData) {
+			HandleError(ec, http.StatusBadRequest, err, service.ErrInvalidRequestData.Error())
+			return true
+		}
+		if errors.Is(err, service.ErrConflict) {
+			HandleError(ec, http.StatusConflict, err, service.ErrConflict.Error())
+			return true
+		}
+		if errors.Is(err, service.ErrNotFound) {
+			HandleError(ec, http.StatusNotFound, err, "Asset not found")
+			return true
+		}
+		if errors.Is(err, service.ErrInvalidCredentials) {
+			HandleError(ec, http.StatusUnauthorized, err, service.ErrInvalidCredentials.Error())
+			return true
+		}
+		if errors.Is(err, service.ErrForbidden) {
+			HandleError(ec, http.StatusForbidden, err, service.ErrForbidden.Error())
+			return true
+		}
 	}
 
 	return false

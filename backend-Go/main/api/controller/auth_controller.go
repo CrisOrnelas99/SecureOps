@@ -55,22 +55,24 @@ func (c *AuthController) Login(ec *appcontext.GinContext) {
 }
 
 func handleAuthServiceError(ec *appcontext.GinContext, err error, fallbackMessage string) bool {
-	var validationErr *service.ValidationError
-	if errors.As(err, &validationErr) {
-		HandleError(ec, http.StatusBadRequest, err, validationErr.Error())
-		return true
-	}
-
-	var unauthorizedErr *service.UnauthorizedError
-	if errors.As(err, &unauthorizedErr) || errors.Is(err, service.ErrInvalidCredentials) {
-		HandleError(ec, http.StatusUnauthorized, err, "Invalid credentials.")
-		return true
-	}
-
-	var forbiddenErr *service.ForbiddenError
-	if errors.As(err, &forbiddenErr) {
-		HandleError(ec, http.StatusForbidden, err, forbiddenErr.Error())
-		return true
+	var serviceErr *service.ServiceError
+	if errors.As(err, &serviceErr) {
+		if errors.Is(err, service.ErrInvalidRequestData) {
+			HandleError(ec, http.StatusBadRequest, err, service.ErrInvalidRequestData.Error())
+			return true
+		}
+		if errors.Is(err, service.ErrConflict) {
+			HandleError(ec, http.StatusConflict, err, service.ErrConflict.Error())
+			return true
+		}
+		if errors.Is(err, service.ErrInvalidCredentials) {
+			HandleError(ec, http.StatusUnauthorized, err, "Invalid credentials.")
+			return true
+		}
+		if errors.Is(err, service.ErrForbidden) {
+			HandleError(ec, http.StatusForbidden, err, service.ErrForbidden.Error())
+			return true
+		}
 	}
 
 	return false

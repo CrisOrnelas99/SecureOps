@@ -30,6 +30,7 @@ func NewAuthService(jwtManager *security.JWTManager, userRepository UserReposito
 }
 
 func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.RegisterRequest) error {
+	request = normalizeRegisterRequest(request)
 	if err := validateRegisterRequest(request); err != nil {
 		return err
 	}
@@ -64,7 +65,11 @@ func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.Regist
 }
 
 func (s *authServiceImpl) Login(ec *appcontext.GinContext, request dto.LoginRequest) (dto.LoginResponse, error) {
-	if strings.TrimSpace(request.UserOrEmail) == "" || utf8.RuneCountInString(request.Password) < 8 || utf8.RuneCountInString(request.Password) > 100 {
+	request.UserOrEmail = strings.TrimSpace(request.UserOrEmail)
+	if strings.Contains(request.UserOrEmail, "@") {
+		request.UserOrEmail = strings.ToLower(request.UserOrEmail)
+	}
+	if request.UserOrEmail == "" || utf8.RuneCountInString(request.Password) < 8 || utf8.RuneCountInString(request.Password) > 100 {
 		return dto.LoginResponse{}, ErrInvalidCredentials
 	}
 
@@ -95,6 +100,12 @@ func (s *authServiceImpl) Login(ec *appcontext.GinContext, request dto.LoginRequ
 	}, nil
 }
 
+func normalizeRegisterRequest(request dto.RegisterRequest) dto.RegisterRequest {
+	request.Username = strings.TrimSpace(request.Username)
+	request.Email = strings.ToLower(strings.TrimSpace(request.Email))
+	return request
+}
+
 func validateRegisterRequest(request dto.RegisterRequest) error {
 	usernameLen := utf8.RuneCountInString(request.Username)
 	passwordLen := utf8.RuneCountInString(request.Password)
@@ -102,7 +113,8 @@ func validateRegisterRequest(request dto.RegisterRequest) error {
 	if usernameLen < 3 || usernameLen > 20 {
 		return ErrInvalidRequestData
 	}
-	if _, err := mail.ParseAddress(request.Email); err != nil {
+	address, err := mail.ParseAddress(request.Email)
+	if err != nil || address.Name != "" || address.Address != request.Email {
 		return ErrInvalidRequestData
 	}
 	if passwordLen < 8 || passwordLen > 100 {

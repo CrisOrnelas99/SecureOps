@@ -49,6 +49,12 @@ type VulnerabilityRepository interface {
 	// FindByID returns one vulnerability by ID.
 	FindByID(ec *appcontext.GinContext, id int64) (model.Vulnerability, error)
 
+	// ExistsByCVEID reports whether a vulnerability with the CVE ID already exists.
+	ExistsByCVEID(ec *appcontext.GinContext, cveID string) (bool, error)
+
+	// ExistsByCVEIDExcludingID reports whether another vulnerability has the CVE ID.
+	ExistsByCVEIDExcludingID(ec *appcontext.GinContext, cveID string, id int64) (bool, error)
+
 	// Save persists a new vulnerability record.
 	Save(ec *appcontext.GinContext, vulnerability model.Vulnerability) (model.Vulnerability, error)
 
