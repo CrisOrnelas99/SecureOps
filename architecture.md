@@ -630,51 +630,6 @@ The intended implementation sequence is:
 15. Complete Docker integration across services
 16. Harden the system and add end-to-end tests
 
-## Current status
-
-The repository currently includes:
-
-- Go Gin/GORM backend foundation
-- JWT-based authentication flow
-- basic role and permission middleware foundation
-- asset CRUD backend
-- vulnerability CRUD backend
-- asset-to-vulnerability assignment backend
-- layered controller/service/repository architecture
-- GORM AutoMigrate schema provisioning
-- Docker Compose for PostgreSQL and backend
-- Angular frontend project structure
-
-## Future work
-
-Future enhancements include:
-
-- organization/application-aware multi-tenancy
-- rich remediation workflow support
-- AI-assisted asset ingestion and relevance review
-- asset-scoped chatbot
-- alerting and CVE refresh services
-- dashboard analytics and risk trends
-- AWS integration in a later phase
-|       |   |-- asset_dto.go
-|       |   |-- auth_dto.go
-|       |   `-- vulnerability_dto.go
-|       |-- middleware/
-|       |-- model/
-|       |   |-- asset.go
-|       |   |-- organization.go
-|       |   |-- user.go
-|       |   `-- vulnerability.go
-|       |-- repository/
-|       |-- security/
-|       |-- service/
-|           |-- asset_service.go
-|           |-- service_helpers.go
-|           |-- repository_interfaces.go
-|           `-- service_errors.go
-|       `-- utils/
-```
-
 Future workflow data files can join the model and DTO layers as needed:
 
 ```text
@@ -1125,22 +1080,3 @@ The intended build order is:
 18. do hardening, access review, and end-to-end testing
 
 `Roadmap.md` should remain the canonical checklist for what is done and what is next.
-
-## Current Status Summary
-
-Based on the current project plan, the backend foundation is focused on the main Go API, PostgreSQL persistence, authentication, assets, vulnerabilities, and asset-vulnerability assignment. The next major implementation area is still the Angular frontend, with risk scoring deferred until the base app is stable.
-
-## Future Improvements
-
-Possible later improvements include:
-
-- role-based access control
-- a dedicated migration tool if GORM AutoMigrate becomes too limited or schema versioning needs more control
-- stronger audit logging
-- pagination and server-side filtering
-- remediation prioritization
-- exposure scoring
-- better dashboard analytics
-- secure secret management beyond local `.env`
-- automated tests across frontend, backend, and Go services
-- container hardening and production deployment guidance
