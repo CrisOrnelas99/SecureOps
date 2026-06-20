@@ -1,0 +1,82 @@
+package controller
+
+import (
+	"errors"
+	"net/http"
+
+	appcontext "secureops/backend-go/api/context"
+	basecontroller "secureops/backend-go/api/controller"
+	"secureops/backend-go/api/dto"
+	baseservice "secureops/backend-go/api/service"
+)
+
+// AuthController handles authentication requests.
+type AuthController struct {
+	authService baseservice.AuthService
+}
+
+// NewAuthController creates a new AuthController instance.
+func NewAuthController(authService baseservice.AuthService) *AuthController {
+	return &AuthController{authService: authService}
+}
+
+// Register handles new user registration requests.
+func (c *AuthController) Register(ec *appcontext.GinContext) {
+	var request dto.RegisterRequest
+	if basecontroller.BindJSON(ec, &request) {
+		return
+	}
+
+	if err := c.authService.Register(ec, request); err != nil {
+		if handleAuthServiceError(ec, err, "Error registering user") {
+			return
+		}
+		basecontroller.HandleError(ec, http.StatusInternalServerError, err, "Error registering user")
+		return
+	}
+
+	ec.Status(http.StatusOK)
+}
+
+// Login handles user authentication requests and returns credentials.
+func (c *AuthController) Login(ec *appcontext.GinContext) {
+	var request dto.LoginRequest
+	if basecontroller.BindJSON(ec, &request) {
+		return
+	}
+
+	loginResponse, err := c.authService.Login(ec, request)
+	if err != nil {
+		if handleAuthServiceError(ec, err, "Error logging in") {
+			return
+		}
+		basecontroller.HandleError(ec, http.StatusInternalServerError, err, "Error logging in")
+		return
+	}
+
+	ec.JSON(http.StatusOK, loginResponse)
+}
+
+func handleAuthServiceError(ec *appcontext.GinContext, err error, fallbackMessage string) bool {
+	var serviceErr *baseservice.ServiceError
+	if errors.As(err, &serviceErr) {
+		if errors.Is(err, baseservice.ErrInvalidRequestData) {
+			basecontroller.HandleError(ec, http.StatusBadRequest, err, baseservice.ErrInvalidRequestData.Error())
+			return true
+		}
+		if errors.Is(err, baseservice.ErrConflict) {
+			basecontroller.HandleError(ec, http.StatusConflict, err, baseservice.ErrConflict.Error())
+			return true
+		}
+		if errors.Is(err, baseservice.ErrInvalidCredentials) {
+			basecontroller.HandleError(ec, http.StatusUnauthorized, err, "Invalid credentials.")
+			return true
+		}
+		if errors.Is(err, baseservice.ErrForbidden) {
+			basecontroller.HandleError(ec, http.StatusForbidden, err, baseservice.ErrForbidden.Error())
+			return true
+		}
+	}
+
+	return false
+}

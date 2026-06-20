@@ -6,4 +6,4 @@ import { Component } from '@angular/core';
   templateUrl: './register.html',
   styleUrl: './register.css',
 })
-export class Register {}
+export class RegisterPage {}

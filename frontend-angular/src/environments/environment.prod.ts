@@ -1,3 +1,3 @@
-export const environments = {
+export const environment = {
   apiUrl: '/api',
 };

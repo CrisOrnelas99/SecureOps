@@ -10,7 +10,24 @@ import (
 )
 
 // RegisterRoutes centralizes all route registrations for the application.
-func RegisterRoutes(router *gin.Engine, jwtManager *security.JWTManager, userLookup middleware.UserLookup, authController *AuthController, assetController *AssetController, vulnerabilityController *VulnerabilityController) {
+func RegisterRoutes(router *gin.Engine, jwtManager *security.JWTManager, userLookup middleware.UserLookup, authController interface {
+	Register(ec *appcontext.GinContext)
+	Login(ec *appcontext.GinContext)
+}, assetController interface {
+	GetAssets(ec *appcontext.GinContext)
+	GetAsset(ec *appcontext.GinContext)
+	CreateAsset(ec *appcontext.GinContext)
+	UpdateAsset(ec *appcontext.GinContext)
+	DeleteAsset(ec *appcontext.GinContext)
+	AssignVulnerability(ec *appcontext.GinContext)
+	RemoveVulnerability(ec *appcontext.GinContext)
+}, vulnerabilityController interface {
+	GetVulnerabilities(ec *appcontext.GinContext)
+	GetVulnerability(ec *appcontext.GinContext)
+	CreateVulnerability(ec *appcontext.GinContext)
+	UpdateVulnerability(ec *appcontext.GinContext)
+	DeleteVulnerability(ec *appcontext.GinContext)
+}) {
 	router.GET("/api/health", Health)
 	router.POST("/api/auth/register", appcontext.Wrap(authController.Register))
 	router.POST("/api/auth/login", appcontext.Wrap(authController.Login))

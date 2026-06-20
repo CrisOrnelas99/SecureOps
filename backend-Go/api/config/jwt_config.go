@@ -2,8 +2,7 @@ package config
 
 import "time"
 
-type JwtConfig struct {
+type JWTConfig struct {
 	Secret     string
 	Expiration time.Duration
 }
-

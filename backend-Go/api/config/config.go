@@ -27,7 +27,10 @@ func Load() Config {
 	jwtIssuer := env("JWT_ISSUER", "secureops-lite")
 	jwtAudience := env("JWT_AUDIENCE", "secureops-lite-api")
 
-	expirationMs, _ := strconv.Atoi(env("JWT_EXPIRATION_MS", "3600000"))
+	expirationMs, err := strconv.Atoi(env("JWT_EXPIRATION_MS", "3600000"))
+	if err != nil || expirationMs <= 0 {
+		expirationMs = 3600000
+	}
 
 	return Config{
 		Port:          port,

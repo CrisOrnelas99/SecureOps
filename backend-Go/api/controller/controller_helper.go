@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	appcontext "secureops/backend-go/api/context"
@@ -71,4 +72,32 @@ func errorCode(status int) string {
 	default:
 		return "INTERNAL_ERROR"
 	}
+}
+
+func ParseID(value string) (int64, error) {
+	return parseID(value)
+}
+
+func ParsePair(ec *appcontext.GinContext) (int64, int64, bool) {
+	return parsePair(ec)
+}
+
+func parseID(value string) (int64, error) {
+	id, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || id <= 0 {
+		return 0, strconv.ErrSyntax
+	}
+	return id, nil
+}
+
+func parsePair(ec *appcontext.GinContext) (int64, int64, bool) {
+	assetID, err := parseID(ec.Param("id"))
+	if err != nil {
+		return 0, 0, false
+	}
+	vulnerabilityID, err := parseID(ec.Param("vulnerabilityId"))
+	if err != nil {
+		return 0, 0, false
+	}
+	return assetID, vulnerabilityID, true
 }

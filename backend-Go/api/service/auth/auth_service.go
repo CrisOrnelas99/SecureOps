@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"net/mail"
 	"strings"
 	"unicode/utf8"
 
@@ -13,42 +12,39 @@ import (
 	"secureops/backend-go/api/dto"
 	"secureops/backend-go/api/model"
 	"secureops/backend-go/api/security"
+	baserepository "secureops/backend-go/api/repository"
+	baseservice "secureops/backend-go/api/service"
 )
-
-type AuthService interface {
-	Register(ec *appcontext.GinContext, request dto.RegisterRequest) error
-	Login(ec *appcontext.GinContext, request dto.LoginRequest) (dto.LoginResponse, error)
-}
 
 type authServiceImpl struct {
 	jwtManager     *security.JWTManager
-	userRepository UserRepository
+	userRepository baserepository.UserRepository
 }
 
-func NewAuthService(jwtManager *security.JWTManager, userRepository UserRepository) AuthService {
+func NewAuthService(jwtManager *security.JWTManager, userRepository baserepository.UserRepository) baseservice.AuthService {
 	return &authServiceImpl{jwtManager: jwtManager, userRepository: userRepository}
 }
 
 func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.RegisterRequest) error {
-	request = normalizeRegisterRequest(request)
-	if err := validateRegisterRequest(request); err != nil {
+	request = baseservice.NormalizeRegisterRequest(request)
+	if err := baseservice.ValidateRegisterRequest(request); err != nil {
 		return err
 	}
 
 	exists, err := s.userRepository.ExistsByUsername(ec, request.Username)
 	if err != nil {
-		return s.translateRepositoryError(err)
+		return baseservice.TranslateRepositoryError(err)
 	}
 	if exists {
-		return ErrConflict
+		return baseservice.ErrConflict
 	}
 
 	exists, err = s.userRepository.ExistsByEmail(ec, request.Email)
 	if err != nil {
-		return s.translateRepositoryError(err)
+		return baseservice.TranslateRepositoryError(err)
 	}
 	if exists {
-		return ErrConflict
+		return baseservice.ErrConflict
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
@@ -56,7 +52,7 @@ func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.Regist
 		return err
 	}
 
-	return s.translateRepositoryError(s.userRepository.Save(ec, model.User{
+	return baseservice.TranslateRepositoryError(s.userRepository.Save(ec, model.User{
 		Username:     request.Username,
 		Email:        request.Email,
 		Role:         model.RoleUser,
@@ -70,19 +66,19 @@ func (s *authServiceImpl) Login(ec *appcontext.GinContext, request dto.LoginRequ
 		request.UserOrEmail = strings.ToLower(request.UserOrEmail)
 	}
 	if request.UserOrEmail == "" || utf8.RuneCountInString(request.Password) < 8 || utf8.RuneCountInString(request.Password) > 100 {
-		return dto.LoginResponse{}, ErrInvalidCredentials
+		return dto.LoginResponse{}, baseservice.ErrInvalidCredentials
 	}
 
 	user, err := s.userRepository.FindByUsernameOrEmail(ec, request.UserOrEmail)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return dto.LoginResponse{}, ErrInvalidCredentials
+			return dto.LoginResponse{}, baseservice.ErrInvalidCredentials
 		}
-		return dto.LoginResponse{}, s.translateRepositoryError(err)
+		return dto.LoginResponse{}, baseservice.TranslateRepositoryError(err)
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)) != nil {
-		return dto.LoginResponse{}, ErrInvalidCredentials
+		return dto.LoginResponse{}, baseservice.ErrInvalidCredentials
 	}
 
 	if s.jwtManager == nil {
@@ -98,32 +94,4 @@ func (s *authServiceImpl) Login(ec *appcontext.GinContext, request dto.LoginRequ
 		Token: token,
 		User:  dto.ToUserResponse(user),
 	}, nil
-}
-
-func normalizeRegisterRequest(request dto.RegisterRequest) dto.RegisterRequest {
-	request.Username = strings.TrimSpace(request.Username)
-	request.Email = strings.ToLower(strings.TrimSpace(request.Email))
-	return request
-}
-
-func validateRegisterRequest(request dto.RegisterRequest) error {
-	usernameLen := utf8.RuneCountInString(request.Username)
-	passwordLen := utf8.RuneCountInString(request.Password)
-
-	if usernameLen < 3 || usernameLen > 20 {
-		return ErrInvalidRequestData
-	}
-	address, err := mail.ParseAddress(request.Email)
-	if err != nil || address.Name != "" || address.Address != request.Email {
-		return ErrInvalidRequestData
-	}
-	if passwordLen < 8 || passwordLen > 100 {
-		return ErrInvalidRequestData
-	}
-
-	return nil
-}
-
-func (s *authServiceImpl) translateRepositoryError(err error) error {
-	return translateRepositoryError(err)
 }

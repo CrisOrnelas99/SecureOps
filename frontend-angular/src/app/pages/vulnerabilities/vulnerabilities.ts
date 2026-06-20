@@ -6,4 +6,4 @@ import { Component } from '@angular/core';
   templateUrl: './vulnerabilities.html',
   styleUrl: './vulnerabilities.css',
 })
-export class Vulnerabilities {}
+export class VulnerabilitiesPage {}

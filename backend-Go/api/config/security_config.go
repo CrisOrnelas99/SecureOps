@@ -8,5 +8,5 @@ import (
 )
 
 func SecurityConfig(jwtManager *security.JWTManager, userLookup middleware.UserLookup) gin.HandlerFunc {
-	return middleware.JwtAuthenticationFilter(jwtManager, userLookup)
+	return middleware.JWTAuthenticationFilter(jwtManager, userLookup)
 }

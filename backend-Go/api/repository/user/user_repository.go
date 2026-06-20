@@ -8,6 +8,7 @@ import (
 
 	appcontext "secureops/backend-go/api/context"
 	"secureops/backend-go/api/model"
+	baserepository "secureops/backend-go/api/repository"
 	"secureops/backend-go/api/utils"
 )
 
@@ -30,7 +31,7 @@ func (r *UserRepository) ExistsByUsername(ec *appcontext.GinContext, username st
 	var count int64
 	err := r.database(ec).WithContext(ec.RequestContext()).Model(&model.User{}).Where("username = ?", username).Count(&count).Error
 	if err != nil {
-		return false, fmt.Errorf("%w: %w", ErrReadFailed, err)
+		return false, fmt.Errorf("%w: %w", baserepository.ErrReadFailed, err)
 	}
 	return count > 0, err
 }
@@ -39,29 +40,29 @@ func (r *UserRepository) ExistsByEmail(ec *appcontext.GinContext, email string) 
 	var count int64
 	err := r.database(ec).WithContext(ec.RequestContext()).Model(&model.User{}).Where("email = ?", email).Count(&count).Error
 	if err != nil {
-		return false, fmt.Errorf("%w: %w", ErrReadFailed, err)
+		return false, fmt.Errorf("%w: %w", baserepository.ErrReadFailed, err)
 	}
 	return count > 0, err
 }
 
 func (r *UserRepository) Save(ec *appcontext.GinContext, user model.User) error {
 	if user.Username == "" || user.Email == "" || user.PasswordHash == "" {
-		return ErrInvalidData
+		return baserepository.ErrInvalidData
 	}
 
 	err := r.database(ec).WithContext(ec.RequestContext()).Create(&user).Error
 	if err != nil {
 		databaseErr := utils.TranslateDatabaseError(err)
 		if errors.Is(databaseErr, utils.ErrUniqueViolation) {
-			return fmt.Errorf("%w: %w", ErrDuplicateData, databaseErr)
+			return fmt.Errorf("%w: %w", baserepository.ErrDuplicateData, databaseErr)
 		}
 		if errors.Is(databaseErr, utils.ErrForeignKeyViolation) {
-			return fmt.Errorf("%w: %w", ErrInvalidReference, databaseErr)
+			return fmt.Errorf("%w: %w", baserepository.ErrInvalidReference, databaseErr)
 		}
 		if errors.Is(databaseErr, utils.ErrCheckConstraintViolation) {
-			return fmt.Errorf("%w: %w", ErrInvalidData, databaseErr)
+			return fmt.Errorf("%w: %w", baserepository.ErrInvalidData, databaseErr)
 		}
-		return fmt.Errorf("%w: %w", ErrCreateFailed, databaseErr)
+		return fmt.Errorf("%w: %w", baserepository.ErrCreateFailed, databaseErr)
 	}
 	return nil
 }
@@ -75,7 +76,7 @@ func (r *UserRepository) FindByUsernameOrEmail(ec *appcontext.GinContext, userOr
 		return model.User{}, gorm.ErrRecordNotFound
 	}
 	if err != nil {
-		return model.User{}, fmt.Errorf("%w: %w", ErrReadFailed, err)
+		return model.User{}, fmt.Errorf("%w: %w", baserepository.ErrReadFailed, err)
 	}
 	return user, err
 }
@@ -87,7 +88,7 @@ func (r *UserRepository) FindByUsername(ec *appcontext.GinContext, username stri
 		return model.User{}, gorm.ErrRecordNotFound
 	}
 	if err != nil {
-		return model.User{}, fmt.Errorf("%w: %w", ErrReadFailed, err)
+		return model.User{}, fmt.Errorf("%w: %w", baserepository.ErrReadFailed, err)
 	}
 	return user, nil
 }

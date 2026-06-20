@@ -16,31 +16,31 @@ type UserLookup interface {
 	FindByUsername(ec *appcontext.GinContext, username string) (model.User, error)
 }
 
-func JwtAuthenticationFilter(jwtManager *security.JWTManager, users UserLookup) gin.HandlerFunc {
+func JWTAuthenticationFilter(jwtManager *security.JWTManager, users UserLookup) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		header := ctx.GetHeader("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") {
-			JwtAuthenticationEntryPoint(ctx)
+			JWTAuthenticationEntryPoint(ctx)
 			return
 		}
 
 		token := strings.TrimPrefix(header, "Bearer ")
 		username, err := jwtManager.ExtractUsername(token)
 		if err != nil {
-			JwtAuthenticationEntryPoint(ctx)
+			JWTAuthenticationEntryPoint(ctx)
 			return
 		}
 
 		ec := appcontext.FromGinContext(ctx)
 		exists, err := users.ExistsByUsername(ec, username)
 		if err != nil || !exists {
-			JwtAuthenticationEntryPoint(ctx)
+			JWTAuthenticationEntryPoint(ctx)
 			return
 		}
 
 		user, err := users.FindByUsername(ec, username)
 		if err != nil {
-			JwtAuthenticationEntryPoint(ctx)
+			JWTAuthenticationEntryPoint(ctx)
 			return
 		}
 
@@ -51,6 +51,6 @@ func JwtAuthenticationFilter(jwtManager *security.JWTManager, users UserLookup) 
 	}
 }
 
-func JwtAuthenticationEntryPoint(ctx *gin.Context) {
+func JWTAuthenticationEntryPoint(ctx *gin.Context) {
 	ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 }

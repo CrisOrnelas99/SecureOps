@@ -9,10 +9,17 @@ import (
 
 	"secureops/backend-go/api/config"
 	"secureops/backend-go/api/controller"
+	controllerasset "secureops/backend-go/api/controller/asset"
+	controllerauth "secureops/backend-go/api/controller/auth"
+	controllervulnerability "secureops/backend-go/api/controller/vulnerability"
 	"secureops/backend-go/api/middleware"
-	"secureops/backend-go/api/repository"
+	repositoryasset "secureops/backend-go/api/repository/asset"
+	repositoryuser "secureops/backend-go/api/repository/user"
+	repositoryvulnerability "secureops/backend-go/api/repository/vulnerability"
 	"secureops/backend-go/api/security"
-	"secureops/backend-go/api/service"
+	serviceasset "secureops/backend-go/api/service/asset"
+	serviceauth "secureops/backend-go/api/service/auth"
+	servicevulnerability "secureops/backend-go/api/service/vulnerability"
 	"secureops/backend-go/api/utils"
 )
 
@@ -38,16 +45,16 @@ func main() {
 
 	jwtManager := security.NewJWTManager(cfg.JWTSecret, cfg.JWTExpiration, cfg.JWTIssuer, cfg.JWTAudience)
 
-	userRepository := repository.NewUserRepository(gormDB)
-	assetRepository := repository.NewAssetRepository(gormDB)
-	vulnerabilityRepository := repository.NewVulnerabilityRepository(gormDB)
-	authService := service.NewAuthService(jwtManager, userRepository)
-	assetService := service.NewAssetService(assetRepository)
-	vulnerabilityService := service.NewVulnerabilityService(vulnerabilityRepository)
+	userRepository := repositoryuser.NewUserRepository(gormDB)
+	assetRepository := repositoryasset.NewAssetRepository(gormDB)
+	vulnerabilityRepository := repositoryvulnerability.NewVulnerabilityRepository(gormDB)
+	authService := serviceauth.NewAuthService(jwtManager, userRepository)
+	assetService := serviceasset.NewAssetService(assetRepository)
+	vulnerabilityService := servicevulnerability.NewVulnerabilityService(vulnerabilityRepository)
 
-	authController := controller.NewAuthController(authService)
-	assetController := controller.NewAssetController(assetService)
-	vulnerabilityController := controller.NewVulnerabilityController(vulnerabilityService)
+	authController := controllerauth.NewAuthController(authService)
+	assetController := controllerasset.NewAssetController(assetService)
+	vulnerabilityController := controllervulnerability.NewVulnerabilityController(vulnerabilityService)
 
 	router := gin.New()
 	router.Use(gin.Recovery())
