@@ -11,8 +11,10 @@ It covers:
 - data and API design
 - current implementation assumptions
 - planned extensions
+- security rules for humans and coding agents
 
 `Roadmap.md` remains the implementation tracker. - Creator only
+`SECURITY.md` is the mandatory security policy for implementation work in this repository.
 
 ## System Overview
 
@@ -32,6 +34,7 @@ The system is organized into these main components:
 - Angular frontend for UI and client-side routing
 - Go Gin/GORM backend as the trust boundary and orchestration layer
 - PostgreSQL for persistence
+- Docker Compose for the current local backend and database stack
 - focused Go services for alerting and CVE refresh
 
 ## High-Level Architecture
@@ -88,15 +91,15 @@ secureops-lite/
 |-- .env
 |-- README.md
 |-- Roadmap.md
-|-- Agents.md
-`-- architecture.md
+|-- AGENTS.md
+|-- SECURITY.md
+`-- ARCHITECTURE.md
 ```
 
 ### Backend layout
 
 ```text
 backend-Go/
-|-- main/
 |-- api/
 |   |-- config/
 |   |-- controller/
@@ -107,6 +110,10 @@ backend-Go/
 |   |-- security/
 |   |-- service/
 |   `-- utils/
+|-- Dockerfile
+|-- go.mod
+|-- go.sum
+`-- main.go
 ```
 
 ### Frontend layout
@@ -292,6 +299,8 @@ Key fields:
 - do not leak stack traces or secrets
 
 ## Security Architecture
+
+`SECURITY.md` is the canonical security checklist and coding-agent policy for this repository. The rules below describe the architecture; `SECURITY.md` defines the required secure behavior when changing code, dependencies, configuration, database access, Docker, external integrations, Angular rendering, or AI workflows.
 
 ### Authentication and authorization
 

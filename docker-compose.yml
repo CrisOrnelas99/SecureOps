@@ -16,7 +16,7 @@ services:
 
   backend:
     build:
-      context: ./backend-Go/main
+      context: ./backend-Go
     container_name: secureops-backend
     restart: unless-stopped
     env_file:

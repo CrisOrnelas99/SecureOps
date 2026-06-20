@@ -13,6 +13,7 @@ SecureOps Lite is a focused cybersecurity asset risk platform. It combines asset
 - [API Summary](#api-summary)
 - [Data Model Direction](#data-model-direction)
 - [Security Approach](#security-approach)
+- [Security Guidance for Coding Agents](#security-guidance-for-coding-agents)
 - [Documentation](#documentation)
 
 ## What This Project Is
@@ -84,7 +85,7 @@ The repository currently contains these working foundations:
 
 ## Planned Extensions
 
-Future work documented in `architecture.md` and `Roadmap.md` includes:
+Future work documented in `ARCHITECTURE.md` and `Roadmap.md` includes:
 
 - organization- and application-aware multi-tenant scoping
 - asset fingerprinting with vendor/product/version metadata
@@ -107,14 +108,15 @@ AssetManagementRisk/
 |-- .env
 |-- README.md
 |-- Roadmap.md
-|-- architecture.md
-`-- Agents.md
+|-- ARCHITECTURE.md
+|-- SECURITY.md
+`-- AGENTS.md
 ```
 
-Inside `backend-Go/main/`:
+Inside `backend-Go/`:
 
 ```text
-backend-Go/main/
+backend-Go/
 |-- api/
 |   |-- config/
 |   |-- controller/
@@ -127,6 +129,7 @@ backend-Go/main/
 |   `-- utils/
 |-- Dockerfile
 |-- go.mod
+|-- go.sum
 `-- main.go
 ```
 
@@ -282,9 +285,15 @@ AI-specific guidance:
 - keep AI provider keys server-side
 - use AI as an assist layer, not a source of truth
 - ground chatbot answers in local data
+
+## Security Guidance for Coding Agents
+
+`SECURITY.md` is the mandatory security reference for humans and coding agents working in this repository. Read it before making changes that affect authentication, authorization, validation, secrets, dependencies, Docker, PostgreSQL, external integrations, Angular rendering, Go/Gin/GORM behavior, or AI-assisted workflows.
+
 ## Documentation
 
 - `README.md`: product overview and setup guidance
-- `architecture.md`: technical architecture and implementation direction
+- `ARCHITECTURE.md`: technical architecture and implementation direction
 - `Roadmap.md`: planned feature sequence - Creator only
-- `Agents.md`: repository-specific assistant instructions - Creator only
+- `SECURITY.md`: mandatory security policy and secure-coding rules for this repository
+- `AGENTS.md`: repository-specific assistant instructions - Creator only
