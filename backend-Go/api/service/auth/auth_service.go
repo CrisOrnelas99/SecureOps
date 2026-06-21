@@ -1,3 +1,4 @@
+// Package service provides authentication application services.
 package service
 
 import (
@@ -8,11 +9,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
+	"secureops/backend-go/api/config"
 	appcontext "secureops/backend-go/api/context"
 	"secureops/backend-go/api/dto"
 	"secureops/backend-go/api/model"
-	"secureops/backend-go/api/security"
 	baserepository "secureops/backend-go/api/repository"
+	"secureops/backend-go/api/security"
 	baseservice "secureops/backend-go/api/service"
 )
 
@@ -21,10 +23,12 @@ type authServiceImpl struct {
 	userRepository baserepository.UserRepository
 }
 
+// NewAuthService creates an authentication service backed by the supplied dependencies.
 func NewAuthService(jwtManager *security.JWTManager, userRepository baserepository.UserRepository) baseservice.AuthService {
 	return &authServiceImpl{jwtManager: jwtManager, userRepository: userRepository}
 }
 
+// Register validates and creates a new user account.
 func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.RegisterRequest) error {
 	request = baseservice.NormalizeRegisterRequest(request)
 	if err := baseservice.ValidateRegisterRequest(request); err != nil {
@@ -47,7 +51,7 @@ func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.Regist
 		return baseservice.ErrConflict
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), config.PasswordCost())
 	if err != nil {
 		return err
 	}
@@ -60,6 +64,7 @@ func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.Regist
 	}))
 }
 
+// Login validates credentials and returns a signed access token.
 func (s *authServiceImpl) Login(ec *appcontext.GinContext, request dto.LoginRequest) (dto.LoginResponse, error) {
 	request.UserOrEmail = strings.TrimSpace(request.UserOrEmail)
 	if strings.Contains(request.UserOrEmail, "@") {

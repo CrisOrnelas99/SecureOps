@@ -1,3 +1,4 @@
+// Package service defines the service contracts used by controllers and implementations.
 package service
 
 import (

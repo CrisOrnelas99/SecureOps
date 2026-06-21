@@ -1,3 +1,6 @@
+// Package middleware provides Gin middleware for request context setup, security guards, and request validation.
+// It keeps middleware responsibilities narrow, attaches shared request-scoped state, and enforces security policies
+// before controllers and services execute.
 package middleware
 
 import (
@@ -11,6 +14,9 @@ import (
 	appcontext "secureops/backend-go/api/context"
 )
 
+// RequestContext initializes request metadata, logger, and the request-scoped GinContext wrapper.
+// This middleware must run early so downstream middleware and handlers can access authenticated
+// identity, transaction IDs, and request-scoped database state.
 func RequestContext() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		transactionID := newTransactionID()
@@ -25,6 +31,7 @@ func RequestContext() gin.HandlerFunc {
 	}
 }
 
+// newTransactionID returns a cryptographically random request identifier for traceability.
 func newTransactionID() string {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {

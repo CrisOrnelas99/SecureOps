@@ -1,7 +1,9 @@
+// Package repository verifies repository sentinel errors.
 package repository
 
 import "testing"
 
+// TestRepositoryErrorMessages verifies the repository sentinel error messages.
 func TestRepositoryErrorMessages(t *testing.T) {
 	if ErrReadFailed.Error() != "read failed" {
 		t.Fatal("unexpected read failed message")

@@ -1,3 +1,4 @@
+// Vulnerabilities page component for the CVE overview route.
 import { Component } from '@angular/core';
 
 @Component({
@@ -6,4 +7,5 @@ import { Component } from '@angular/core';
   templateUrl: './vulnerabilities.html',
   styleUrl: './vulnerabilities.css',
 })
+// VulnerabilitiesPage renders the vulnerability list surface.
 export class VulnerabilitiesPage {}

@@ -1,3 +1,4 @@
+// Package controller provides shared HTTP helpers for the API.
 package controller
 
 import (
@@ -14,10 +15,11 @@ import (
 
 const maxJSONBodyBytes int64 = 1 << 20
 
+// BindJSON parses an application/json request body into the provided destination.
 func BindJSON(ec *appcontext.GinContext, destination any) bool {
 	contentType := ec.GetHeader("Content-Type")
 	if contentType == "" || !strings.HasPrefix(strings.ToLower(contentType), "application/json") {
-		HandleError(ec, http.StatusUnsupportedMediaType, errors.New("unsupported content type"), "Content-Type must be application/json")
+		HandleError(ec, http.StatusUnsupportedMediaType, ErrInvalidContentType, "Content-Type must be application/json")
 		return true
 	}
 
@@ -26,13 +28,13 @@ func BindJSON(ec *appcontext.GinContext, destination any) bool {
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(destination); err != nil {
-		HandleError(ec, http.StatusBadRequest, err, "Invalid request body")
+		HandleError(ec, http.StatusBadRequest, errors.Join(ErrInvalidRequestBody, err), "Invalid request body")
 		return true
 	}
 
 	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		if err == nil {
-			err = errors.New("request body must contain a single JSON object")
+			err = ErrInvalidRequestBody
 		}
 		HandleError(ec, http.StatusBadRequest, err, "Invalid request body")
 		return true
@@ -41,6 +43,7 @@ func BindJSON(ec *appcontext.GinContext, destination any) bool {
 	return false
 }
 
+// HandleError logs the request failure and writes a safe API error response.
 func HandleError(ec *appcontext.GinContext, status int, err error, message string) bool {
 	if err == nil {
 		return false
@@ -55,6 +58,7 @@ func HandleError(ec *appcontext.GinContext, status int, err error, message strin
 	return true
 }
 
+// errorCode maps HTTP statuses to stable API error codes.
 func errorCode(status int) string {
 	switch status {
 	case http.StatusBadRequest:
@@ -74,22 +78,26 @@ func errorCode(status int) string {
 	}
 }
 
+// ParseID validates a path or query identifier as a positive integer.
 func ParseID(value string) (int64, error) {
 	return parseID(value)
 }
 
+// ParsePair validates the asset and vulnerability identifiers from a request context.
 func ParsePair(ec *appcontext.GinContext) (int64, int64, bool) {
 	return parsePair(ec)
 }
 
+// parseID parses a positive integer identifier.
 func parseID(value string) (int64, error) {
 	id, err := strconv.ParseInt(value, 10, 64)
 	if err != nil || id <= 0 {
-		return 0, strconv.ErrSyntax
+		return 0, ErrInvalidIdentifier
 	}
 	return id, nil
 }
 
+// parsePair parses the asset and vulnerability identifiers from the request.
 func parsePair(ec *appcontext.GinContext) (int64, int64, bool) {
 	assetID, err := parseID(ec.Param("id"))
 	if err != nil {

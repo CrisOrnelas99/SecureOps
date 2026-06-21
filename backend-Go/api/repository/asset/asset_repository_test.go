@@ -1,3 +1,4 @@
+// Package repository verifies asset repository behavior.
 package repository
 
 import (
@@ -11,6 +12,7 @@ import (
 	appcontext "secureops/backend-go/api/context"
 )
 
+// TestAssetRepositoryDatabasePrefersContextDB verifies the context database is preferred.
 func TestAssetRepositoryDatabasePrefersContextDB(t *testing.T) {
 	fallback := &gorm.DB{}
 	repo := NewAssetRepository(fallback)
@@ -22,10 +24,10 @@ func TestAssetRepositoryDatabasePrefersContextDB(t *testing.T) {
 	override := &gorm.DB{}
 	ec.SetDatabase(override)
 
-	if repo.database(ec) != override {
+	if repo.dbForContext(ec) != override {
 		t.Fatal("expected context database to win")
 	}
-	if repo.database(nil) != fallback {
+	if repo.dbForContext(nil) != fallback {
 		t.Fatal("expected fallback database when context is nil")
 	}
 }

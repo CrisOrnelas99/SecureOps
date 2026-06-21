@@ -1,3 +1,5 @@
+// Package middleware provides Gin middleware for request context setup, security guards, and request validation.
+// RequestFilter inspects request paths and queries for unsafe patterns and fails closed on suspicious input.
 package middleware
 
 import (
@@ -8,6 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// RequestFilter blocks suspicious requests that match common attack patterns.
+// It protects the application from obvious path traversal, XSS, and SQL injection payloads
+// before request handlers and business logic execute.
 func RequestFilter() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		data := strings.ToLower(c.Request.URL.Path + " " + c.Request.URL.RawQuery)

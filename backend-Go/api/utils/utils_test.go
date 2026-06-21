@@ -8,8 +8,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func TestDatabaseErrorMessage(t *testing.T) {
-	err := DatabaseError{Message: "database failed"}
+func TestDBErrorMessage(t *testing.T) {
+	err := DBError{Message: "database failed"}
 
 	if err.Error() != "database failed" {
 		t.Fatalf("expected database failed, got %q", err.Error())

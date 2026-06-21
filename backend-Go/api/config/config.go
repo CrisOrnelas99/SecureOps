@@ -1,31 +1,55 @@
+// Package config loads application settings from environment variables.
+// It provides structured configuration values for startup and middleware.
 package config
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
+// Config holds app settings loaded from environment variables.
 type Config struct {
-	Port          string
-	DatabaseURL   string
-	JWTSecret     string
-	JWTExpiration time.Duration
-	JWTIssuer     string
-	JWTAudience   string
+	Environment       string
+	Port              string
+	DatabaseURL       string
+	JWTSecret         string
+	JWTExpiration     time.Duration
+	JWTIssuer         string
+	JWTAudience       string
+	CorsAllowedOrigin string
 }
 
+// Load reads environment variables and fills default values for missing settings.
 func Load() Config {
+	environment := env("GO_ENV", "development")
+	isProduction := environment == "production"
+
 	port := env("PORT", "8080")
-	dbHost := env("DB_HOST", "localhost")
-	dbPort := env("POSTGRES_PORT", "5432")
-	dbName := env("POSTGRES_DB", "secureops")
-	dbUser := env("POSTGRES_USER", "secureops")
-	dbPassword := env("POSTGRES_PASSWORD", "secureops")
+	databaseURL := env("DATABASE_URL", "")
+	if databaseURL == "" {
+		dbHost := env("DB_HOST", "localhost")
+		dbPort := env("POSTGRES_PORT", "5432")
+		dbName := env("POSTGRES_DB", "secureops")
+		dbUser := env("POSTGRES_USER", "secureops")
+		dbPassword := env("POSTGRES_PASSWORD", "secureops")
+
+		if isProduction && (dbHost == "" || dbPort == "" || dbName == "" || dbUser == "" || dbPassword == "") {
+			databaseURL = ""
+		} else {
+			databaseURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+		}
+	}
+
 	jwtSecret := env("JWT_SECRET", "")
 	jwtIssuer := env("JWT_ISSUER", "secureops-lite")
 	jwtAudience := env("JWT_AUDIENCE", "secureops-lite-api")
+	corsAllowedOrigin := env("CORS_ALLOWED_ORIGIN", "http://localhost:4200")
+	if isProduction {
+		corsAllowedOrigin = env("CORS_ALLOWED_ORIGIN", "")
+	}
 
 	expirationMs, err := strconv.Atoi(env("JWT_EXPIRATION_MS", "3600000"))
 	if err != nil || expirationMs <= 0 {
@@ -33,19 +57,34 @@ func Load() Config {
 	}
 
 	return Config{
-		Port:          port,
-		DatabaseURL:   fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName),
-		JWTSecret:     jwtSecret,
-		JWTExpiration: time.Duration(expirationMs) * time.Millisecond,
-		JWTIssuer:     jwtIssuer,
-		JWTAudience:   jwtAudience,
+		Environment:       environment,
+		Port:              port,
+		DatabaseURL:       databaseURL,
+		JWTSecret:         jwtSecret,
+		JWTExpiration:     time.Duration(expirationMs) * time.Millisecond,
+		JWTIssuer:         jwtIssuer,
+		JWTAudience:       jwtAudience,
+		CorsAllowedOrigin: corsAllowedOrigin,
 	}
 }
 
-func env(key string, fallback string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return fallback
+// Validate checks that required production settings are present.
+func (cfg Config) Validate() error {
+	if cfg.Environment == "production" {
+		if cfg.JWTSecret == "" {
+			return ErrMissingJWTSecret
+		}
+		if cfg.CorsAllowedOrigin == "" {
+			return ErrMissingCorsAllowedOrigin
+		}
+		if cfg.DatabaseURL == "" {
+			return ErrMissingDatabaseURL
+		}
 	}
-	return value
+	return nil
+}
+
+// PasswordCost returns the bcrypt cost factor used for password hashing.
+func PasswordCost() int {
+	return bcrypt.DefaultCost
 }

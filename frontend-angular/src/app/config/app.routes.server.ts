@@ -1,3 +1,4 @@
+// Server rendering rules for the Angular routes.
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
 export const serverRoutes: ServerRoute[] = [

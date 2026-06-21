@@ -1,3 +1,4 @@
+// Package controller provides HTTP handlers for asset operations.
 package controller
 
 import (
@@ -160,6 +161,7 @@ func (c *AssetController) RemoveVulnerability(ec *appcontext.GinContext) {
 	ec.JSON(http.StatusOK, dto.ToAssetResponseDTO(asset))
 }
 
+// handleAssetServiceError maps asset service sentinels to HTTP responses.
 func handleAssetServiceError(ec *appcontext.GinContext, err error, fallbackMessage string) bool {
 	var serviceErr *baseservice.ServiceError
 	if errors.As(err, &serviceErr) {

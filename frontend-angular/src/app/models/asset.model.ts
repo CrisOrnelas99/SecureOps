@@ -1,5 +1,5 @@
+// Asset model used to describe frontend asset data shapes.
 export interface Asset {
-
   id: number;
   name: string;
   type: string;
@@ -11,5 +11,4 @@ export interface Asset {
   riskLevel: string;
   createdAt: string;
   updatedAt: string;
-
 }

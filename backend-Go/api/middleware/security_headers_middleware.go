@@ -1,7 +1,11 @@
+// Package middleware provides Gin middleware for request context setup, security guards, and request validation.
+// SecurityHeaders sets strict response headers to protect the application from common browser-based threats.
 package middleware
 
 import "github.com/gin-gonic/gin"
 
+// SecurityHeaders adds standard security response headers for CSP, HSTS, MIME sniffing, frame options,
+// referrer policy, and feature policy.
 func SecurityHeaders() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		headers := ctx.Writer.Header()

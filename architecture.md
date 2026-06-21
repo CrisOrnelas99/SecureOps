@@ -11,10 +11,10 @@ It covers:
 - data and API design
 - current implementation assumptions
 - planned extensions
-- security rules for humans and coding agents
 
 `Roadmap.md` remains the implementation tracker. - Creator only
 `SECURITY.md` is the mandatory security policy for implementation work in this repository.
+`CLEANCODE.md` defines code structure, package responsibilities, and implementation conventions.
 
 ## System Overview
 
@@ -292,68 +292,23 @@ Key fields:
 
 ### Response rules
 
-- never return password hashes
-- use DTOs for request and response payloads
-- keep auth errors generic
-- map service errors to appropriate HTTP responses
-- do not leak stack traces or secrets
+Response payload design follows the repository's DTO separation and controller-to-service mapping conventions.
+For detailed coding guidance on request and response design, see `CLEANCODE.md`.
+For error handling and safe response behavior, see `SECURITY.md`.
 
 ## Security Architecture
 
-`SECURITY.md` is the canonical security checklist and coding-agent policy for this repository. The rules below describe the architecture; `SECURITY.md` defines the required secure behavior when changing code, dependencies, configuration, database access, Docker, external integrations, Angular rendering, or AI workflows.
+`SECURITY.md` is the canonical security checklist and coding-agent policy for this repository. This document describes architecture assumptions and trust boundaries only; it does not duplicate mandatory security controls.
 
-### Authentication and authorization
+The backend is the main trust boundary. Authentication, authorization, input validation, secret management, and logging controls are defined in `SECURITY.md`.
 
-- hash passwords with BCrypt
-- protect backend routes with JWT middleware
-- enforce organization membership for org-scoped data
-- separate admin-only routes from normal user routes
-- never trust client-submitted role values
+Architecture notes:
 
-### Input validation
-
-- validate DTOs in the service layer
-- allowlist severity, status, and criticality values
-- validate IDs and ownership before mutation
-- validate imported upstream data before trusting it
-
-### NVD and external APIs
-
-- keep NVD keys in environment variables
-- never expose NVD keys to the frontend
-- cache local results instead of live-querying on every page
-- handle upstream failures safely
-
-### AI security
-
-- keep AI provider keys server-side only
-- restrict prompts to asset-specific context
-- defend against prompt injection
-- treat model output as advisory text
-
-### RequestFilter
-
-A lightweight request filter should block obvious suspicious input patterns:
-
-- SQL injection-like strings
-- XSS-like strings
-- path traversal patterns like `../`
-
-This is an additional defensive layer, not a substitute for validation.
-
-### Secrets and config
-
-- keep `.env` out of source control
-- treat `.env` as local development configuration only
-- avoid hardcoded secrets in code or Docker images
-
-### Logging
-
-- log blocked requests with care
-- log authentication and security events when useful
-- never log plaintext passwords
-- never log full JWTs or secret values
-- avoid exposing internal diagnostic details to API consumers
+- The frontend must never bypass the backend for protected resources or external integrations.
+- Backend responsibility includes tenant isolation, role-based access, and data ownership enforcement.
+- External APIs such as NVD and AI providers are accessed only through the backend.
+- Secrets and provider keys are server-side only.
+- Defensive request filtering and safe response handling are architecture considerations; their required controls are documented in `SECURITY.md`.
 
 Future workflow data files can join the model and DTO layers as needed:
 
@@ -390,61 +345,19 @@ The main Go backend should keep this dependency direction:
 controller -> service -> repository -> database
 ```
 
-Layer responsibilities:
-
-- `controller`: HTTP-only concerns such as Gin context handling, JSON binding, route parameter parsing, and response calls
-- `service`: business validation, ownership checks, repository-error translation, and use-case coordination
-- `repository`: GORM/database reads and writes only
-- `utils`: database connection helpers and database error helpers. The current backend provisions the schema with GORM AutoMigrate at startup rather than a separate SQL migration folder.
-- `middleware`: request filtering and Gin middleware behavior
-- `security`: JWT generation, parsing, and authentication filtering
-- `config`: environment-backed construction of config and dependencies
-
-Interfaces should be owned by the consuming layer:
-
-- service interfaces are exposed by the `service` package for controller use
-- controllers receive service interfaces directly through constructors in `main.go`
-- `service/repository_interfaces.go` defines the repository interfaces services need
-- repository structs satisfy those interfaces implicitly
-- service structs satisfy their package interfaces implicitly
-
-This keeps controllers unaware of repository implementations and keeps repositories unaware of HTTP.
+Controllers handle HTTP requests, services orchestrate use cases, and repositories manage persistence.
+For implementation conventions and layer responsibilities, see `CLEANCODE.md`.
 
 ### DTO and model placement
 
-The current code separates database/domain structs from request/response DTO structs:
-
-- database/domain structs live in `api/model`: `asset.go`, `user.go`, `vulnerability.go`
-- DTO structs live in `api/dto`: `asset_dto.go`, `auth_dto.go`, `vulnerability_dto.go`
-
-DTO files should not live in `controller`. Controllers use DTOs, but DTOs are not controller behavior.
+The current code separates database/domain structs from request/response DTO structs.
+Database/domain structs live in `api/model`, and request/response DTOs live in `api/dto`.
+See `CLEANCODE.md` for implementation conventions.
 
 ### Error handling layout
 
-Package-level `errors.go` files should stay simple:
-
-```go
-type ServiceError struct {
-	Message string
-}
-
-func (e ServiceError) Error() string {
-	return e.Message
-}
-
-var (
-	ErrInvalidRequestData = &ServiceError{Message: "invalid request data"}
-)
-```
-
-Rules:
-
-- `errors.go` files contain only the error struct, its `Error()` method, and sentinel vars
-- repository errors describe repository/database outcomes only
-- service errors are more general business outcomes such as invalid request, conflict, not found, invalid credentials, and forbidden
-- middleware and security errors follow the same simple sentinel style
-- helper functions and mapping logic belong in normal implementation files, not in `errors.go`
-- config does not need `config_errors.go` until config loading returns `(Config, error)`
+Error types and mapping are part of the implementation conventions.
+See `CLEANCODE.md` for the repository’s error handling style and `SECURITY.md` for response safety requirements.
 
 ### Core backend flows
 

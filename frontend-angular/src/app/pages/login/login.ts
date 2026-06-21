@@ -1,3 +1,4 @@
+// Login page component for the authentication route.
 import { Component } from '@angular/core';
 
 @Component({
@@ -6,4 +7,5 @@ import { Component } from '@angular/core';
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
+// LoginPage renders the sign-in surface.
 export class LoginPage {}

@@ -120,9 +120,9 @@ func TestAuthenticatedUserValuesReturnExpectedTypesOnly(t *testing.T) {
 		t.Fatalf("expected missing user role to return empty string, got %q", ctx.UserRole())
 	}
 
-	ginCtx.Set("userID", int64(42))
-	ginCtx.Set("username", "analyst")
-	ginCtx.Set("userRole", "user")
+	ctx.SetUserID(int64(42))
+	ctx.SetUsername("analyst")
+	ctx.SetUserRole("user")
 
 	if ctx.UserID() != 42 {
 		t.Fatalf("expected user ID 42, got %d", ctx.UserID())
@@ -134,9 +134,9 @@ func TestAuthenticatedUserValuesReturnExpectedTypesOnly(t *testing.T) {
 		t.Fatalf("expected user role user, got %q", ctx.UserRole())
 	}
 
-	ginCtx.Set("userID", "42")
-	ginCtx.Set("username", 42)
-	ginCtx.Set("userRole", 42)
+	ginCtx.Set(userIDKey, "42")
+	ginCtx.Set(usernameKey, 42)
+	ginCtx.Set(userRoleKey, 42)
 
 	if ctx.UserID() != 0 {
 		t.Fatalf("expected wrong-type user ID to return 0, got %d", ctx.UserID())

@@ -1,3 +1,4 @@
+// Package dto defines request and response data transfer objects for the API.
 package dto
 
 import (
@@ -6,12 +7,14 @@ import (
 	"secureops/backend-go/api/model"
 )
 
+// ErrorResponse is the safe error envelope returned to API clients.
 type ErrorResponse struct {
 	Code      string `json:"code"`
 	Message   string `json:"message"`
 	RequestID string `json:"requestId"`
 }
 
+// VulnerabilityResponse exposes the public vulnerability fields returned by the API.
 type VulnerabilityResponse struct {
 	ID          int64     `json:"id"`
 	CVEID       string    `json:"cveId"`
@@ -23,6 +26,7 @@ type VulnerabilityResponse struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+// AssetResponse exposes the public asset fields returned by the API.
 type AssetResponse struct {
 	ID              int64                   `json:"id"`
 	Name            string                  `json:"name"`
@@ -38,6 +42,7 @@ type AssetResponse struct {
 	UpdatedAt       time.Time               `json:"updatedAt"`
 }
 
+// ToVulnerabilityResponseDTO converts a vulnerability model into its response DTO.
 func ToVulnerabilityResponseDTO(vulnerability model.Vulnerability) VulnerabilityResponse {
 	return VulnerabilityResponse{
 		ID:          vulnerability.ID,
@@ -51,6 +56,7 @@ func ToVulnerabilityResponseDTO(vulnerability model.Vulnerability) Vulnerability
 	}
 }
 
+// ToVulnerabilityResponseDTOs converts multiple vulnerability models into response DTOs.
 func ToVulnerabilityResponseDTOs(vulnerabilities []model.Vulnerability) []VulnerabilityResponse {
 	result := make([]VulnerabilityResponse, 0, len(vulnerabilities))
 	for _, vulnerability := range vulnerabilities {
@@ -59,6 +65,7 @@ func ToVulnerabilityResponseDTOs(vulnerabilities []model.Vulnerability) []Vulner
 	return result
 }
 
+// ToAssetResponseDTO converts an asset model into its response DTO.
 func ToAssetResponseDTO(asset model.Asset) AssetResponse {
 	return AssetResponse{
 		ID:              asset.ID,
@@ -76,6 +83,7 @@ func ToAssetResponseDTO(asset model.Asset) AssetResponse {
 	}
 }
 
+// ToAssetResponseDTOs converts multiple asset models into response DTOs.
 func ToAssetResponseDTOs(assets []model.Asset) []AssetResponse {
 	result := make([]AssetResponse, 0, len(assets))
 	for _, asset := range assets {

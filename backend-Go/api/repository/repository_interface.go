@@ -1,3 +1,4 @@
+// Package repository defines persistence contracts used by the service layer.
 package repository
 
 import (

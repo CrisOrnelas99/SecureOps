@@ -1,3 +1,4 @@
+// Package controller provides HTTP handlers for authentication requests.
 package controller
 
 import (
@@ -57,6 +58,7 @@ func (c *AuthController) Login(ec *appcontext.GinContext) {
 	ec.JSON(http.StatusOK, loginResponse)
 }
 
+// handleAuthServiceError maps auth service sentinels to HTTP responses.
 func handleAuthServiceError(ec *appcontext.GinContext, err error, fallbackMessage string) bool {
 	var serviceErr *baseservice.ServiceError
 	if errors.As(err, &serviceErr) {

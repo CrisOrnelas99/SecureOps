@@ -25,6 +25,9 @@ import (
 
 func main() {
 	cfg := config.Load()
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("configuration validation failed: %v", err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -56,18 +59,33 @@ func main() {
 	assetController := controllerasset.NewAssetController(assetService)
 	vulnerabilityController := controllervulnerability.NewVulnerabilityController(vulnerabilityService)
 
-	router := gin.New()
-	router.Use(gin.Recovery())
-	router.Use(middleware.RequestContext())
-	router.Use(middleware.SecurityHeaders())
-	router.Use(middleware.GormMiddleware(gormDB))
-	router.Use(config.CorsConfig())
-	router.Use(middleware.RequestFilter())
+	engine := gin.New()
+	engine.Use(gin.Recovery())
+	engine.Use(middleware.RequestContext())
+	engine.Use(middleware.SecurityHeaders())
+	engine.Use(middleware.GormMiddleware(gormDB))
+	engine.Use(middleware.Cors(cfg.CorsAllowedOrigin))
+	engine.Use(middleware.RequestFilter())
 	// Register all routes centrally in the controller package
-	controller.RegisterRoutes(router, jwtManager, userRepository, authController, assetController, vulnerabilityController)
+	controller.RegisterRoutes(engine, jwtManager, userRepository, controller.RouteHandlers{
+		RegisterAuth:        authController.Register,
+		LoginAuth:           authController.Login,
+		GetAssets:           assetController.GetAssets,
+		GetAsset:            assetController.GetAsset,
+		CreateAsset:         assetController.CreateAsset,
+		UpdateAsset:         assetController.UpdateAsset,
+		DeleteAsset:         assetController.DeleteAsset,
+		AssignVulnerability: assetController.AssignVulnerability,
+		RemoveVulnerability: assetController.RemoveVulnerability,
+		GetVulnerabilities:  vulnerabilityController.GetVulnerabilities,
+		GetVulnerability:    vulnerabilityController.GetVulnerability,
+		CreateVulnerability: vulnerabilityController.CreateVulnerability,
+		UpdateVulnerability: vulnerabilityController.UpdateVulnerability,
+		DeleteVulnerability: vulnerabilityController.DeleteVulnerability,
+	})
 
 	log.Printf("Go backend running on :%s", cfg.Port)
-	if err := router.Run(":" + cfg.Port); err != nil {
+	if err := engine.Run(":" + cfg.Port); err != nil {
 		log.Fatal(err)
 	}
 }

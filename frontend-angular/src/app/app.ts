@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+// Root application component that renders the shell and active route content.
+import { Component } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 
 @Component({
@@ -8,5 +9,4 @@ import { RouterLink, RouterOutlet } from '@angular/router';
   styleUrl: './app.css',
 })
 export class App {
-  protected readonly title = signal('frontend-angular');
 }

@@ -1,3 +1,6 @@
+// Package middleware provides Gin middleware for request context setup, security guards, and request validation.
+// JWTAuthenticationFilter validates incoming bearer tokens and establishes authenticated request state.
+// It translates a verified JWT into typed identity data stored on GinContext.
 package middleware
 
 import (
@@ -11,11 +14,16 @@ import (
 	"secureops/backend-go/api/security"
 )
 
+// UserLookup defines how authentication middleware resolves a username to a user record.
+// It accepts a request-scoped GinContext so lookup implementations can use the current request metadata.
 type UserLookup interface {
 	ExistsByUsername(ec *appcontext.GinContext, username string) (bool, error)
 	FindByUsername(ec *appcontext.GinContext, username string) (model.User, error)
 }
 
+// JWTAuthenticationFilter validates Authorization bearer tokens, resolves the authenticated user,
+// and stores typed authentication state on request context. It fails closed for missing, invalid,
+// or unverifiable authentication.
 func JWTAuthenticationFilter(jwtManager *security.JWTManager, users UserLookup) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		header := ctx.GetHeader("Authorization")
@@ -44,13 +52,14 @@ func JWTAuthenticationFilter(jwtManager *security.JWTManager, users UserLookup) 
 			return
 		}
 
-		ctx.Set("username", username)
-		ctx.Set("userID", user.ID)
-		ctx.Set("userRole", user.Role)
+		ec.SetUsername(username)
+		ec.SetUserID(user.ID)
+		ec.SetUserRole(user.Role)
 		ctx.Next()
 	}
 }
 
+// JWTAuthenticationEntryPoint aborts the request with a standard 401 Unauthorized response.
 func JWTAuthenticationEntryPoint(ctx *gin.Context) {
 	ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 }

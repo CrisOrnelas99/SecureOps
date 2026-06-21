@@ -1,3 +1,4 @@
+// Package security provides JWT management and token claim validation helpers.
 package security
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// JWTManager issues and validates backend JWT access tokens.
 type JWTManager struct {
 	secret     []byte
 	expiration time.Duration
@@ -13,6 +15,7 @@ type JWTManager struct {
 	audience   string
 }
 
+// AccessClaims holds the JWT claims used for backend access tokens.
 type AccessClaims struct {
 	Scope    string `json:"scope"`
 	TokenUse string `json:"tokenUse"`
@@ -24,10 +27,12 @@ const (
 	tokenUse    = "access"
 )
 
+// NewJWTManager creates a JWT manager with the configured signing settings.
 func NewJWTManager(secret string, expiration time.Duration, issuer string, audience string) *JWTManager {
 	return &JWTManager{secret: []byte(secret), expiration: expiration, issuer: issuer, audience: audience}
 }
 
+// GenerateToken creates a signed access token for the given username.
 func (s *JWTManager) GenerateToken(username string) (string, error) {
 	if len(s.secret) == 0 {
 		return "", ErrMissingSecret
@@ -50,6 +55,7 @@ func (s *JWTManager) GenerateToken(username string) (string, error) {
 	return token.SignedString(s.secret)
 }
 
+// ExtractUsername validates an access token and returns the subject username.
 func (s *JWTManager) ExtractUsername(tokenString string) (string, error) {
 	if len(s.secret) == 0 {
 		return "", ErrMissingSecret

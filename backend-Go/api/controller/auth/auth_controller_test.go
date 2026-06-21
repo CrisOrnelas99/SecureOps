@@ -1,3 +1,4 @@
+// Package controller tests authentication controller request handling.
 package controller
 
 import (
@@ -14,6 +15,7 @@ import (
 	baseservice "secureops/backend-go/api/service"
 )
 
+// TestAuthControllerHandlers verifies the auth controller request flow.
 func TestAuthControllerHandlers(t *testing.T) {
 	svc := &fakeAuthService{loginResponse: dto.LoginResponse{Token: "token", User: dto.UserResponse{ID: 1, Username: "analyst", Email: "analyst@example.com"}}}
 	controller := NewAuthController(svc)
@@ -55,6 +57,7 @@ func (f *fakeAuthService) Login(ec *appcontext.GinContext, request dto.LoginRequ
 
 var _ baseservice.AuthService = (*fakeAuthService)(nil)
 
+// newAuthContext creates a test Gin context for auth controller tests.
 func newAuthContext(t *testing.T, method string, target string, body string) *appcontext.GinContext {
 	t.Helper()
 

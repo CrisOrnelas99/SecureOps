@@ -1,3 +1,4 @@
+// Browser application configuration for routing and hydration.
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 

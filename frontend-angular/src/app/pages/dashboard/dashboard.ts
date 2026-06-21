@@ -1,3 +1,4 @@
+// Dashboard page component for the operational overview route.
 import { Component } from '@angular/core';
 
 @Component({
@@ -6,4 +7,5 @@ import { Component } from '@angular/core';
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
+// DashboardPage renders the summary dashboard surface.
 export class DashboardPage {}

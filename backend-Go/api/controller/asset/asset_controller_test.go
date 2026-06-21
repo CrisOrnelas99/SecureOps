@@ -1,3 +1,4 @@
+// Package controller tests asset controller request handling.
 package controller
 
 import (
@@ -16,6 +17,7 @@ import (
 	baseservice "secureops/backend-go/api/service"
 )
 
+// TestAssetControllerHandlers verifies the asset controller request flow.
 func TestAssetControllerHandlers(t *testing.T) {
 	svc := &fakeAssetService{asset: sampleAsset(), assets: []model.Asset{sampleAsset()}}
 	controller := NewAssetController(svc)
@@ -50,7 +52,9 @@ func (f *fakeAssetService) GetAllAssets(ec *appcontext.GinContext) ([]model.Asse
 	f.getAllCalls++
 	return f.assets, f.err
 }
-func (f *fakeAssetService) GetAsset(ec *appcontext.GinContext, id int64) (model.Asset, error) { return f.asset, f.err }
+func (f *fakeAssetService) GetAsset(ec *appcontext.GinContext, id int64) (model.Asset, error) {
+	return f.asset, f.err
+}
 func (f *fakeAssetService) CreateAsset(ec *appcontext.GinContext, asset model.Asset) (model.Asset, error) {
 	f.createCalls++
 	return f.asset, f.err
@@ -70,6 +74,7 @@ func (f *fakeAssetService) RemoveVulnerability(ec *appcontext.GinContext, assetI
 
 var _ baseservice.AssetService = (*fakeAssetService)(nil)
 
+// newAssetContext creates a test Gin context for asset controller tests.
 func newAssetContext(t *testing.T, method string, target string, body string) *appcontext.GinContext {
 	t.Helper()
 
@@ -85,6 +90,7 @@ func newAssetContext(t *testing.T, method string, target string, body string) *a
 	return ec
 }
 
+// sampleAsset returns a reusable asset fixture.
 func sampleAsset() model.Asset {
 	return model.Asset{ID: 1, Name: "Asset 1", Type: "Server", IPAddress: "10.0.0.10", Owner: "IT", Criticality: "High"}
 }

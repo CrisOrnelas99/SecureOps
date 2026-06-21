@@ -1,7 +1,9 @@
+// Package model defines the persistence and domain structs used by GORM.
 package model
 
 import "time"
 
+// Asset represents a tenant-scoped asset stored in PostgreSQL.
 type Asset struct {
 	ID              int64           `gorm:"primaryKey" json:"id"`
 	UserID          int64           `gorm:"column:user_id;index" json:"-"`
@@ -18,6 +20,7 @@ type Asset struct {
 	UpdatedAt       time.Time       `gorm:"column:updated_at" json:"updatedAt"`
 }
 
+// TableName returns the PostgreSQL table name for Asset.
 func (Asset) TableName() string {
 	return "assets"
 }

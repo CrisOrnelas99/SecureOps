@@ -169,7 +169,12 @@ func TestRequireAdmin(t *testing.T) {
 			router := gin.New()
 			if tt.role != nil {
 				router.Use(func(ctx *gin.Context) {
-					ctx.Set("userRole", tt.role)
+					ec := appcontext.FromGinContext(ctx)
+					if role, ok := tt.role.(string); ok {
+						ec.SetUserRole(role)
+					} else {
+						ctx.Set("userRole", tt.role)
+					}
 					ctx.Next()
 				})
 			}
@@ -279,14 +284,15 @@ func TestJWTAuthenticationFilterSetsAuthenticatedUserContext(t *testing.T) {
 	router.Use(RequestContext())
 	router.Use(JWTAuthenticationFilter(jwtManager, lookup))
 	router.GET("/private", func(ctx *gin.Context) {
-		if username, _ := ctx.Get("username"); username != "analyst" {
-			t.Fatalf("expected username analyst, got %v", username)
+		ec := appcontext.FromGinContext(ctx)
+		if ec.Username() != "analyst" {
+			t.Fatalf("expected username analyst, got %v", ec.Username())
 		}
-		if userID, _ := ctx.Get("userID"); userID != int64(42) {
-			t.Fatalf("expected user ID 42, got %v", userID)
+		if ec.UserID() != int64(42) {
+			t.Fatalf("expected user ID 42, got %v", ec.UserID())
 		}
-		if role, _ := ctx.Get("userRole"); role != model.RoleUser {
-			t.Fatalf("expected user role %s, got %v", model.RoleUser, role)
+		if ec.UserRole() != model.RoleUser {
+			t.Fatalf("expected user role %s, got %v", model.RoleUser, ec.UserRole())
 		}
 		if lookup.existsContext == nil || lookup.findContext == nil {
 			t.Fatal("expected user lookup to receive GinContext")

@@ -1,3 +1,4 @@
+// Package utils provides database connection, migration, and error translation helpers.
 package utils
 
 import (
@@ -13,6 +14,7 @@ import (
 	"secureops/backend-go/api/model"
 )
 
+// Connect opens a GORM database connection and verifies it is reachable.
 func Connect(ctx context.Context, cfg config.Config) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
@@ -31,6 +33,7 @@ func Connect(ctx context.Context, cfg config.Config) (*gorm.DB, error) {
 	return db, nil
 }
 
+// Close shuts down the underlying SQL database connection.
 func Close(database *gorm.DB) error {
 	sqlDB, err := database.DB()
 	if err != nil {
@@ -39,6 +42,7 @@ func Close(database *gorm.DB) error {
 	return sqlDB.Close()
 }
 
+// TranslateDatabaseError maps known PostgreSQL constraint errors to layer-specific sentinel errors.
 func TranslateDatabaseError(err error) error {
 	switch {
 	case err == nil:
@@ -54,11 +58,13 @@ func TranslateDatabaseError(err error) error {
 	}
 }
 
+// isPostgresError reports whether err is a pgx error with the expected SQLSTATE code.
 func isPostgresError(err error, code string) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == code
 }
 
+// RunMigrations applies the database schema setup used by this application.
 func RunMigrations(ctx context.Context, database *gorm.DB) error {
 	if err := ensureUserSchema(ctx, database); err != nil {
 		return err
@@ -74,6 +80,7 @@ func RunMigrations(ctx context.Context, database *gorm.DB) error {
 	return ensureIndexes(ctx, database)
 }
 
+// ensureUserSchema creates the user table and required columns when they do not already exist.
 func ensureUserSchema(ctx context.Context, database *gorm.DB) error {
 	statements := []string{
 		`CREATE TABLE IF NOT EXISTS users (
@@ -95,6 +102,7 @@ func ensureUserSchema(ctx context.Context, database *gorm.DB) error {
 	return nil
 }
 
+// ensureIndexes applies the indexes and constraints required by the current schema.
 func ensureIndexes(ctx context.Context, database *gorm.DB) error {
 	statements := []string{
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (username)`,

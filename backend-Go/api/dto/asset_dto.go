@@ -1,3 +1,4 @@
+// Package dto defines request and response data transfer objects for the API.
 package dto
 
 import (
@@ -6,6 +7,7 @@ import (
 	"secureops/backend-go/api/model"
 )
 
+// AssetRequest describes the writable asset fields accepted by the API.
 type AssetRequest struct {
 	Name            string  `json:"name"`
 	Type            string  `json:"type"`
@@ -15,6 +17,7 @@ type AssetRequest struct {
 	Criticality     string  `json:"criticality"`
 }
 
+// ToDataModel converts the request into the persistence model with trimmed values.
 func (r AssetRequest) ToDataModel() model.Asset {
 	operatingSystem := trimOptionalString(r.OperatingSystem)
 
