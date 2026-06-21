@@ -1,8 +1,8 @@
-# SecureOps Lite Architecture
+# SecureOps Architecture
 
 ## Purpose
 
-This document describes the architecture of SecureOps Lite. It is the technical reference for developers and maintainers.
+This document describes the architecture of SecureOps. It is the technical reference for developers and maintainers.
 
 It covers:
 
@@ -18,7 +18,7 @@ It covers:
 
 ## System Overview
 
-SecureOps Lite is a cybersecurity asset risk platform.
+SecureOps is a cybersecurity asset risk platform.
 
 It supports:
 
@@ -84,7 +84,7 @@ The backend is the main system boundary.
 The repository is structured around the application and supporting services.
 
 ```text
-secureops-lite/
+AssetManagementRisk/
 |-- backend-Go/
 |-- frontend-angular/
 |-- docker-compose.yml

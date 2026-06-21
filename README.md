@@ -1,6 +1,8 @@
-# SecureOps Lite
+# SecureOps
 
-SecureOps Lite is a focused cybersecurity asset risk platform. It combines asset inventory, vulnerability intelligence, and AI-assisted workflows to help teams understand risk across organizations, applications, home networks, and imported asset inventories.
+SecureOps is a focused cybersecurity asset risk platform. It combines asset inventory, vulnerability intelligence, and AI-assisted workflows to help teams understand risk across organizations, applications, home networks, and imported asset inventories.
+
+For implementation details and agent rules, use `ARCHITECTURE.md`, `CLEANCODE.md`, and `SECURITY.md` together. `README.md` stays at the product and setup level.
 
 ## Table of Contents
 
@@ -18,7 +20,7 @@ SecureOps Lite is a focused cybersecurity asset risk platform. It combines asset
 
 ## What This Project Is
 
-SecureOps Lite is designed as a practical, developer-friendly security application rather than a full enterprise SIEM.
+SecureOps is designed as a practical, developer-friendly security application rather than a full enterprise SIEM.
 It demonstrates how a secure backend trust boundary, external vulnerability data, and AI-assisted ingestion can work together in one system.
 
 Key capabilities include:
@@ -32,8 +34,9 @@ The platform supports multiple inventory contexts, including organization portfo
 
 ## Architecture
 
-SecureOps Lite is intentionally designed with clear component separation.
+SecureOps is intentionally designed with clear component separation.
 The backend is the primary security boundary and owner of authorization, persistence, external integration, and AI orchestration.
+See `ARCHITECTURE.md` for the technical layout and `CLEANCODE.md` for code-structure rules that keep the implementation consistent with that layout.
 
 - Angular frontend: UI, authentication, asset and vulnerability workflows, chat UX.
 - Go Gin/GORM backend: API, authentication, business logic, data orchestration, NVD/AI integration.
@@ -107,6 +110,7 @@ AssetManagementRisk/
 |-- docker-compose.yml
 |-- .env
 |-- README.md
+|-- CLEANCODE.md
 |-- Roadmap.md
 |-- ARCHITECTURE.md
 |-- SECURITY.md
@@ -266,7 +270,7 @@ Assets should capture both business inventory and product fingerprint metadata:
 
 ## Security Approach
 
-SecureOps Lite is organized around strong backend controls and safe external integration.
+SecureOps is organized around strong backend controls and safe external integration.
 
 Security principles:
 
@@ -290,10 +294,13 @@ AI-specific guidance:
 
 `SECURITY.md` is the mandatory security reference for humans and coding agents working in this repository. Read it before making changes that affect authentication, authorization, validation, secrets, dependencies, Docker, PostgreSQL, external integrations, Angular rendering, Go/Gin/GORM behavior, or AI-assisted workflows.
 
+`ARCHITECTURE.md` defines the system layout and trust boundaries. `CLEANCODE.md` defines naming, structure, and implementation conventions. `README.md` should not override either of those files.
+
 ## Documentation
 
 - `README.md`: product overview and setup guidance
 - `ARCHITECTURE.md`: technical architecture and implementation direction
+- `CLEANCODE.md`: naming, structure, and implementation conventions
 - `Roadmap.md`: planned feature sequence - Creator only
 - `SECURITY.md`: mandatory security policy and secure-coding rules for this repository
 - `AGENTS.md`: repository-specific assistant instructions - Creator only

@@ -44,8 +44,8 @@ func Load() Config {
 	}
 
 	jwtSecret := env("JWT_SECRET", "")
-	jwtIssuer := env("JWT_ISSUER", "secureops-lite")
-	jwtAudience := env("JWT_AUDIENCE", "secureops-lite-api")
+	jwtIssuer := env("JWT_ISSUER", "secureops")
+	jwtAudience := env("JWT_AUDIENCE", "secureops-api")
 	corsAllowedOrigin := env("CORS_ALLOWED_ORIGIN", "http://localhost:4200")
 	if isProduction {
 		corsAllowedOrigin = env("CORS_ALLOWED_ORIGIN", "")

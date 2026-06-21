@@ -24,11 +24,11 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if cfg.JWTExpiration != time.Hour {
 		t.Fatalf("expected default JWT expiration %s, got %s", time.Hour, cfg.JWTExpiration)
 	}
-	if cfg.JWTIssuer != "secureops-lite" {
-		t.Fatalf("expected default JWT issuer secureops-lite, got %q", cfg.JWTIssuer)
+	if cfg.JWTIssuer != "secureops" {
+		t.Fatalf("expected default JWT issuer secureops, got %q", cfg.JWTIssuer)
 	}
-	if cfg.JWTAudience != "secureops-lite-api" {
-		t.Fatalf("expected default JWT audience secureops-lite-api, got %q", cfg.JWTAudience)
+	if cfg.JWTAudience != "secureops-api" {
+		t.Fatalf("expected default JWT audience secureops-api, got %q", cfg.JWTAudience)
 	}
 	if cfg.CorsAllowedOrigin != "http://localhost:4200" {
 		t.Fatalf("expected default CORS allowed origin http://localhost:4200, got %q", cfg.CorsAllowedOrigin)
