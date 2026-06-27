@@ -104,6 +104,7 @@ func TestRegisterRoutes(t *testing.T) {
 	authController := controllerauth.NewAuthController(&fakeAuthService{})
 	assetController := controllerasset.NewAssetController(&fakeAssetService{asset: sampleAsset(), assets: []model.Asset{sampleAsset()}})
 	vulnerabilityController := controllervulnerability.NewVulnerabilityController(&fakeVulnerabilityService{vulnerability: sampleVulnerability(), vulnerabilities: []model.Vulnerability{sampleVulnerability()}})
+	nvdLookupCalled := false
 
 	basecontroller.RegisterRoutes(engine, jwtManager, lookup, basecontroller.RouteHandlers{
 		RegisterAuth:        authController.Register,
@@ -120,6 +121,10 @@ func TestRegisterRoutes(t *testing.T) {
 		CreateVulnerability: vulnerabilityController.CreateVulnerability,
 		UpdateVulnerability: vulnerabilityController.UpdateVulnerability,
 		DeleteVulnerability: vulnerabilityController.DeleteVulnerability,
+		LookupCVE: func(ec *appcontext.GinContext) {
+			nvdLookupCalled = true
+			ec.JSON(http.StatusOK, gin.H{"cveId": ec.Param("cveId")})
+		},
 	})
 
 	recorder := httptest.NewRecorder()
@@ -127,6 +132,21 @@ func TestRegisterRoutes(t *testing.T) {
 	engine.ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected health endpoint to be registered, got %d", recorder.Code)
+	}
+
+	token, err := jwtManager.GenerateToken("analyst")
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+	recorder = httptest.NewRecorder()
+	request = httptest.NewRequest(http.MethodGet, "/api/nvd/cves/CVE-2021-44228", nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+	engine.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected NVD route status %d, got %d", http.StatusOK, recorder.Code)
+	}
+	if !nvdLookupCalled {
+		t.Fatal("expected NVD lookup route handler to be called")
 	}
 }
 

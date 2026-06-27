@@ -14,4 +14,6 @@ var (
 	ErrNotFound           = &ServiceError{Message: "not found"}
 	ErrInvalidCredentials = &ServiceError{Message: "invalid credentials"}
 	ErrForbidden          = &ServiceError{Message: "forbidden"}
+	ErrRateLimited        = &ServiceError{Message: "rate limited"}
+	ErrExternalService    = &ServiceError{Message: "external service unavailable"}
 )

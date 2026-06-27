@@ -71,6 +71,10 @@ func errorCode(status int) string {
 		return "NOT_FOUND"
 	case http.StatusConflict:
 		return "CONFLICT"
+	case http.StatusTooManyRequests:
+		return "RATE_LIMITED"
+	case http.StatusBadGateway:
+		return "UPSTREAM_ERROR"
 	case http.StatusUnsupportedMediaType:
 		return "UNSUPPORTED_MEDIA_TYPE"
 	default:

@@ -104,6 +104,7 @@ backend-Go/
 |   |-- config/
 |   |-- controller/
 |   |-- dto/
+|   |-- external/
 |   |-- middleware/
 |   |-- model/
 |   |-- repository/
@@ -677,6 +678,20 @@ This is the practical handshake for this project: the backend proves it is an au
 - Angular should never call AI providers directly
 - Angular should never call Go services directly
 
+Local development has two supported run modes:
+
+- Docker Compose mode: the backend container reaches PostgreSQL through the Docker service name `postgres` on container port `5432`.
+- Local backend mode: `go run .` runs from `backend-Go/` and reaches the PostgreSQL container through the published host port, such as `127.0.0.1:15432` when Windows already has another PostgreSQL process on `5432`.
+
+In local backend mode, the Go process reads environment variables from the shell session.
+It does not automatically load the root `.env` file.
+Set `DATABASE_URL` and `JWT_SECRET` before running `go run .`.
+Set `BOOTSTRAP_DEV_DATA=true` only when you want local development seed data.
+That bootstrap creates a test admin user, one test device asset, one example CVE vulnerability, and the asset-to-vulnerability assignment after migrations run.
+The bootstrap is disabled by default and must not run in production.
+
+In Docker Compose mode, the backend container sets `BOOTSTRAP_DEV_DATA=true` so the seeded test account exists after a fresh compose start.
+
 ### Environment variables
 
 Typical values should include:
@@ -689,6 +704,7 @@ Typical values should include:
 - JWT secret
 - JWT expiration
 - NVD API key
+- optional development bootstrap flag
 - AI provider API key
 - alert service base URL
 - cve sync service base URL

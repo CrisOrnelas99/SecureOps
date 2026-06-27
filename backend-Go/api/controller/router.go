@@ -25,6 +25,7 @@ type RouteHandlers struct {
 	CreateVulnerability func(*appcontext.GinContext)
 	UpdateVulnerability func(*appcontext.GinContext)
 	DeleteVulnerability func(*appcontext.GinContext)
+	LookupCVE           func(*appcontext.GinContext)
 }
 
 // RegisterRoutes centralizes all route registrations for the application.
@@ -49,5 +50,7 @@ func RegisterRoutes(router *gin.Engine, jwtManager *security.JWTManager, userLoo
 		protected.POST("/vulnerabilities", appcontext.Wrap(handlers.CreateVulnerability))
 		protected.PUT("/vulnerabilities/:id", appcontext.Wrap(handlers.UpdateVulnerability))
 		protected.DELETE("/vulnerabilities/:id", appcontext.Wrap(handlers.DeleteVulnerability))
+
+		protected.GET("/nvd/cves/:cveId", appcontext.Wrap(handlers.LookupCVE))
 	}
 }

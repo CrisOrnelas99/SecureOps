@@ -33,6 +33,15 @@ func TestLoadUsesDefaults(t *testing.T) {
 	if cfg.CorsAllowedOrigin != "http://localhost:4200" {
 		t.Fatalf("expected default CORS allowed origin http://localhost:4200, got %q", cfg.CorsAllowedOrigin)
 	}
+	if cfg.NVDAPIBaseURL != nvdCVEAPIBaseURL {
+		t.Fatalf("expected default NVD API base URL, got %q", cfg.NVDAPIBaseURL)
+	}
+	if cfg.NVDAPIKey != "" {
+		t.Fatal("expected default NVD API key to be empty")
+	}
+	if cfg.BootstrapDevData {
+		t.Fatal("expected bootstrap dev data to be disabled by default")
+	}
 }
 
 // TestLoadUsesEnvironment verifies Load reads values from environment variables.
@@ -47,6 +56,8 @@ func TestLoadUsesEnvironment(t *testing.T) {
 	t.Setenv("JWT_ISSUER", "issuer")
 	t.Setenv("JWT_AUDIENCE", "audience")
 	t.Setenv("JWT_EXPIRATION_MS", "60000")
+	t.Setenv("NVD_API_KEY", "nvd-key")
+	t.Setenv("BOOTSTRAP_DEV_DATA", "true")
 
 	cfg := Load()
 
@@ -67,6 +78,12 @@ func TestLoadUsesEnvironment(t *testing.T) {
 	}
 	if cfg.JWTAudience != "audience" {
 		t.Fatalf("expected configured JWT audience audience, got %q", cfg.JWTAudience)
+	}
+	if cfg.NVDAPIKey != "nvd-key" {
+		t.Fatalf("expected configured NVD API key, got %q", cfg.NVDAPIKey)
+	}
+	if !cfg.BootstrapDevData {
+		t.Fatal("expected bootstrap dev data to be enabled")
 	}
 }
 
@@ -169,6 +186,8 @@ func clearConfigEnv(t *testing.T) {
 		"JWT_ISSUER",
 		"JWT_AUDIENCE",
 		"JWT_EXPIRATION_MS",
+		"NVD_API_KEY",
+		"BOOTSTRAP_DEV_DATA",
 	}
 
 	for _, key := range keys {

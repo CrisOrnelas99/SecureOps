@@ -1,0 +1,26 @@
+opencollection: 1.0.0
+
+info:
+  name: API/Tests
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZSI6ImFwaSIsInRva2VuVXNlIjoiYWNjZXNzIiwiaXNzIjoic2VjdXJlb3BzIiwic3ViIjoic3lzdGVtX2FkbWluIiwiYXVkIjpbInNlY3VyZW9wcy1hcGkiXSwiZXhwIjoxNzgyNTkzNTUzLCJpYXQiOjE3ODI1ODk5NTN9.bKWBzQXyhTAMM3L7-CtWNI5YXP5MKDmAIght3oiLN7k
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git

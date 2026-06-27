@@ -46,3 +46,9 @@ type VulnerabilityService interface {
 	// DeleteVulnerability removes a vulnerability by ID.
 	DeleteVulnerability(ec *appcontext.GinContext, id int64) (model.Vulnerability, error)
 }
+
+// NVDLookupService defines read-only CVE lookup operations backed by NVD data.
+type NVDLookupService interface {
+	// LookupCVE returns official NVD details for a single CVE ID.
+	LookupCVE(ec *appcontext.GinContext, cveID string) (dto.CVELookupResponse, error)
+}

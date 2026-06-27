@@ -2,16 +2,20 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"secureops/backend-go/api/config"
 	"secureops/backend-go/api/controller"
 	controllerasset "secureops/backend-go/api/controller/asset"
 	controllerauth "secureops/backend-go/api/controller/auth"
+	controllernvd "secureops/backend-go/api/controller/nvd"
 	controllervulnerability "secureops/backend-go/api/controller/vulnerability"
+	nvdexternal "secureops/backend-go/api/external/nvd"
 	"secureops/backend-go/api/middleware"
 	repositoryasset "secureops/backend-go/api/repository/asset"
 	repositoryuser "secureops/backend-go/api/repository/user"
@@ -19,6 +23,7 @@ import (
 	"secureops/backend-go/api/security"
 	serviceasset "secureops/backend-go/api/service/asset"
 	serviceauth "secureops/backend-go/api/service/auth"
+	servicenvd "secureops/backend-go/api/service/nvd"
 	servicevulnerability "secureops/backend-go/api/service/vulnerability"
 	"secureops/backend-go/api/utils"
 )
@@ -29,10 +34,10 @@ func main() {
 		log.Fatalf("configuration validation failed: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
-	gormDB, err := utils.Connect(ctx, cfg)
+	gormDB, err := connectDatabaseWithRetry(ctx, cfg)
 	if err != nil {
 		log.Fatalf("database connection failed: %v", err)
 	}
@@ -45,6 +50,9 @@ func main() {
 	if err := utils.RunMigrations(ctx, gormDB); err != nil {
 		log.Fatalf("database migration failed: %v", err)
 	}
+	if err := runBootstrap(ctx, gormDB, cfg); err != nil {
+		log.Fatalf("bootstrap failed: %v", err)
+	}
 
 	jwtManager := security.NewJWTManager(cfg.JWTSecret, cfg.JWTExpiration, cfg.JWTIssuer, cfg.JWTAudience)
 
@@ -54,10 +62,16 @@ func main() {
 	authService := serviceauth.NewAuthService(jwtManager, userRepository)
 	assetService := serviceasset.NewAssetService(assetRepository)
 	vulnerabilityService := servicevulnerability.NewVulnerabilityService(vulnerabilityRepository)
+	nvdClient, err := nvdexternal.NewClient(cfg.NVDAPIBaseURL, cfg.NVDAPIKey)
+	if err != nil {
+		log.Fatalf("nvd client configuration failed: %v", err)
+	}
+	nvdLookupService := servicenvd.NewNVDLookupService(nvdClient)
 
 	authController := controllerauth.NewAuthController(authService)
 	assetController := controllerasset.NewAssetController(assetService)
 	vulnerabilityController := controllervulnerability.NewVulnerabilityController(vulnerabilityService)
+	nvdController := controllernvd.NewNVDController(nvdLookupService)
 
 	engine := gin.New()
 	engine.Use(gin.Recovery())
@@ -82,10 +96,39 @@ func main() {
 		CreateVulnerability: vulnerabilityController.CreateVulnerability,
 		UpdateVulnerability: vulnerabilityController.UpdateVulnerability,
 		DeleteVulnerability: vulnerabilityController.DeleteVulnerability,
+		LookupCVE:           nvdController.LookupCVE,
 	})
 
 	log.Printf("Go backend running on :%s", cfg.Port)
 	if err := engine.Run(":" + cfg.Port); err != nil {
 		log.Fatal(err)
 	}
+}
+
+const (
+	databaseConnectAttempts = 15
+	databaseConnectDelay    = 2 * time.Second
+)
+
+func connectDatabaseWithRetry(ctx context.Context, cfg config.Config) (*gorm.DB, error) {
+	var lastErr error
+
+	for attempt := 1; attempt <= databaseConnectAttempts; attempt++ {
+		database, err := utils.Connect(ctx, cfg)
+		if err == nil {
+			return database, nil
+		}
+
+		lastErr = err
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
+		log.Printf("database connection attempt %d/%d failed: %v", attempt, databaseConnectAttempts, err)
+		if attempt < databaseConnectAttempts {
+			time.Sleep(databaseConnectDelay)
+		}
+	}
+
+	return nil, fmt.Errorf("connect database after %d attempts: %w", databaseConnectAttempts, lastErr)
 }

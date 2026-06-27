@@ -161,16 +161,63 @@ The current `docker-compose.yml` includes:
 - `postgres`
 - `backend`
 
-Start the stack with:
+Start the full Compose stack with:
 
 ```bash
 docker compose up --build
 ```
 
+The backend container starts with `BOOTSTRAP_DEV_DATA=true`, so the seeded `system_admin` test account is available after a fresh compose start.
+
 Default endpoints:
 
 - backend: `http://localhost:8080`
 - PostgreSQL: mapped from `${POSTGRES_PORT}` to container `5432`
+
+For backend development, it is often simpler to run PostgreSQL in Docker and the Go backend directly from the local shell.
+This keeps rebuilds fast while still using the same database container.
+
+From the repository root:
+
+```powershell
+$env:POSTGRES_PORT = '15432'
+docker compose up -d postgres
+docker compose ps
+```
+
+Use `15432` when another PostgreSQL process is already using local port `5432`.
+The `docker compose ps` output should show `15432->5432/tcp`.
+
+Then run the backend from `backend-Go/`:
+
+```powershell
+cd backend-Go
+$env:DATABASE_URL = 'postgres://secureops_user:s5e4c3u2r1e@127.0.0.1:15432/secureops'
+$env:JWT_SECRET = 't1h2i3s4I5s6A7R8a9n0d1o2m3S4e5c6r7e8t'
+$env:BOOTSTRAP_DEV_DATA = 'true'
+go run .
+```
+
+When using local `go run .`, Go reads environment variables from the PowerShell session.
+It does not automatically load the root `.env` file.
+Docker Compose reads `.env` for containers.
+
+`BOOTSTRAP_DEV_DATA=true` is optional. When enabled in development, startup creates or updates a local test setup:
+
+- admin username: `system_admin`
+- email: `test@gmail.com`
+- password: `Password123!`
+- one test device asset
+- one assigned example vulnerability: `CVE-2021-44228`
+
+The bootstrap flag is rejected in production mode.
+
+If port `8080` is already in use, stop the old local backend process before restarting:
+
+```powershell
+netstat -ano | findstr ":8080"
+Stop-Process -Id <PID> -Force
+```
 
 ### Frontend status
 

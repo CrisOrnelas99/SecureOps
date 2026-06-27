@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 
@@ -14,6 +15,8 @@ import (
 	"secureops/backend-go/api/model"
 	baserepository "secureops/backend-go/api/repository"
 )
+
+var cveIDPattern = regexp.MustCompile(`^CVE-\d{4}-\d{4,}$`)
 
 // TranslateRepositoryError maps repository errors to service-layer sentinels.
 func TranslateRepositoryError(err error) error {
@@ -84,6 +87,19 @@ func ValidateRegisterRequest(request dto.RegisterRequest) error {
 // ValidateVulnerability validates the fields required to create or update a vulnerability.
 func ValidateVulnerability(vulnerability model.Vulnerability) error {
 	if strings.TrimSpace(vulnerability.CVEID) == "" || strings.TrimSpace(vulnerability.Title) == "" || strings.TrimSpace(vulnerability.Severity) == "" || strings.TrimSpace(vulnerability.Description) == "" || strings.TrimSpace(vulnerability.Status) == "" {
+		return ErrInvalidRequestData
+	}
+	return nil
+}
+
+// NormalizeCVEID trims and uppercases a CVE identifier before lookup.
+func NormalizeCVEID(cveID string) string {
+	return strings.ToUpper(strings.TrimSpace(cveID))
+}
+
+// ValidateCVEID verifies the identifier is safe to use with the NVD CVE API.
+func ValidateCVEID(cveID string) error {
+	if !cveIDPattern.MatchString(NormalizeCVEID(cveID)) {
 		return ErrInvalidRequestData
 	}
 	return nil

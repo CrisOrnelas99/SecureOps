@@ -5,6 +5,7 @@ package config
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -20,7 +21,12 @@ type Config struct {
 	JWTIssuer         string
 	JWTAudience       string
 	CorsAllowedOrigin string
+	NVDAPIBaseURL     string
+	NVDAPIKey         string
+	BootstrapDevData  bool
 }
+
+const nvdCVEAPIBaseURL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 
 // Load reads environment variables and fills default values for missing settings.
 func Load() Config {
@@ -46,6 +52,8 @@ func Load() Config {
 	jwtSecret := env("JWT_SECRET", "")
 	jwtIssuer := env("JWT_ISSUER", "secureops")
 	jwtAudience := env("JWT_AUDIENCE", "secureops-api")
+	nvdAPIKey := env("NVD_API_KEY", "")
+	bootstrapDevData := strings.EqualFold(env("BOOTSTRAP_DEV_DATA", "false"), "true")
 	corsAllowedOrigin := env("CORS_ALLOWED_ORIGIN", "http://localhost:4200")
 	if isProduction {
 		corsAllowedOrigin = env("CORS_ALLOWED_ORIGIN", "")
@@ -65,6 +73,9 @@ func Load() Config {
 		JWTIssuer:         jwtIssuer,
 		JWTAudience:       jwtAudience,
 		CorsAllowedOrigin: corsAllowedOrigin,
+		NVDAPIBaseURL:     nvdCVEAPIBaseURL,
+		NVDAPIKey:         nvdAPIKey,
+		BootstrapDevData:  bootstrapDevData,
 	}
 }
 
