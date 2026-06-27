@@ -10,6 +10,7 @@ RUN go build -o backend-go .
 FROM alpine:3.21
 
 WORKDIR /app
+RUN apk add --no-cache ca-certificates && update-ca-certificates
 COPY --from=build /app/backend-go /app/backend-go
 
 EXPOSE 8080

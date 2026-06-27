@@ -52,13 +52,13 @@ func translateNVDError(err error) error {
 	case err == nil:
 		return nil
 	case errors.Is(err, nvdexternal.ErrInvalidCVEID):
-		return baseservice.ErrInvalidRequestData
+		return fmt.Errorf("%w: %w", baseservice.ErrInvalidRequestData, err)
 	case errors.Is(err, nvdexternal.ErrCVEIDNotFound):
-		return baseservice.ErrNotFound
+		return fmt.Errorf("%w: %w", baseservice.ErrNotFound, err)
 	case errors.Is(err, nvdexternal.ErrNVDRateLimited):
-		return baseservice.ErrRateLimited
+		return fmt.Errorf("%w: %w", baseservice.ErrRateLimited, err)
 	case errors.Is(err, nvdexternal.ErrNVDUnavailable), errors.Is(err, nvdexternal.ErrInvalidNVDResponse):
-		return baseservice.ErrExternalService
+		return fmt.Errorf("%w: %w", baseservice.ErrExternalService, err)
 	default:
 		return fmt.Errorf("%w: %v", baseservice.ErrExternalService, err)
 	}
