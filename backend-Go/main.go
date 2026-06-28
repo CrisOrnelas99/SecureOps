@@ -27,6 +27,7 @@ import (
 	servicenvd "secureops/backend-go/api/service/nvd"
 	servicevulnerability "secureops/backend-go/api/service/vulnerability"
 	"secureops/backend-go/api/utils"
+	"secureops/backend-go/bootstrap"
 )
 
 func main() {
@@ -51,7 +52,7 @@ func main() {
 	if err := utils.RunMigrations(ctx, gormDB); err != nil {
 		log.Fatalf("database migration failed: %v", err)
 	}
-	if err := runBootstrap(ctx, gormDB, cfg); err != nil {
+	if err := bootstrap.Run(ctx, gormDB, cfg); err != nil {
 		log.Fatalf("bootstrap failed: %v", err)
 	}
 

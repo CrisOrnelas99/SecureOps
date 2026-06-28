@@ -201,6 +201,7 @@ When the application is deployed to AWS or another cloud provider, keep these ru
 * Send logs to a managed logging service such as CloudWatch without secrets.
 * Preserve server-side authorization, validation, and session checks exactly as in local deployments.
 * Prefer structured logs for audit and request events so security fields can be filtered without exposing payloads.
+* Keep application-level rate limiting authoritative for auth and NVD lookup paths; use AWS WAF/ALB/CloudFront-style controls as a second layer only.
 
 ---
 

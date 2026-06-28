@@ -41,6 +41,7 @@ The Go backend owns:
 - vulnerability CRUD
 - asset-to-vulnerability assignment
 - NVD lookup and local vulnerability persistence
+- endpoint rate limiting for auth and NVD lookup paths
 - structured request logging and security logging
 - safe error handling and input validation
 - cloud deployment compatibility for managed services such as ECR, ECS/Fargate, RDS, ALB/ACM, CloudWatch, Secrets Manager, and EventBridge
@@ -56,6 +57,7 @@ Important notes:
 - logout revokes the stored session
 - protected requests check both the access token and the active session state
 - login resolves `userOrEmail` by shape: email-like values use email lookup, everything else uses username lookup
+- auth and NVD lookup requests are rate limited in the backend
 - outbound TLS verification remains enabled for external API calls such as NVD
 
 ### Flow Summary

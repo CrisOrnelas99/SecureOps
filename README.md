@@ -28,6 +28,7 @@ Key capabilities include:
 - asset inventory with product-aware metadata
 - vulnerability tracking and asset-to-vulnerability assignment
 - backend-enforced authorization and security controls
+- backend rate limiting on auth and NVD lookup endpoints
 - short-lived access tokens with server-side refresh-token sessions
 - planned vulnerability intelligence and AI-assisted workflows listed below
 
@@ -43,6 +44,7 @@ See `ARCHITECTURE.md` for the technical layout and `CLEANCODE.md` for code-struc
 - Go Gin/GORM backend: API, authentication, business logic, data orchestration, NVD/AI integration.
 - PostgreSQL: persistent storage for users, assets, vulnerabilities, and future workflow state.
 - Focused services: planned narrow services for alerting and CVE refresh.
+- Backend request logging and rate limiting are applied to sensitive endpoints.
 
 ### High-level architecture
 
@@ -101,6 +103,7 @@ Future work documented in `ARCHITECTURE.md` and `Roadmap.md` includes:
 - dashboard analytics and risk trend reporting
 - full Docker integration for frontend, backend, and services
 - later AWS deployment foundation using ECR, ECS/Fargate or EC2, RDS, ALB/ACM, Secrets Manager, CloudWatch, and EventBridge
+- later AWS edge controls such as WAF, ALB throttling, or CloudFront-style protection layered on top of backend limits
 
 ## Repository Layout
 

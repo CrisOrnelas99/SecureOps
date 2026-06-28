@@ -1,4 +1,4 @@
-package main
+package bootstrap
 
 import (
 	"context"
@@ -36,7 +36,8 @@ const (
 	bootstrapDescription        = "Example NVD-backed CVE used for local testing."
 )
 
-func runBootstrap(ctx context.Context, database *gorm.DB, cfg config.Config) error {
+// Run seeds developer bootstrap data when enabled.
+func Run(ctx context.Context, database *gorm.DB, cfg config.Config) error {
 	if !cfg.BootstrapDevData {
 		return nil
 	}

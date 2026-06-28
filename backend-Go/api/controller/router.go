@@ -34,10 +34,15 @@ type RouteHandlers struct {
 // RegisterRoutes centralizes all route registrations for the application.
 func RegisterRoutes(router *gin.Engine, jwtManager *security.JWTManager, userLookup middleware.UserLookup, sessions middleware.RefreshSessionLookup, handlers RouteHandlers) {
 	router.GET("/api/health", Health)
-	router.POST("/api/auth/register", appcontext.Wrap(handlers.RegisterAuth))
-	router.POST("/api/auth/login", appcontext.Wrap(handlers.LoginAuth))
-	router.POST("/api/auth/refresh", appcontext.Wrap(handlers.RefreshAuth))
-	router.POST("/api/auth/logout", appcontext.Wrap(handlers.LogoutAuth))
+
+	auth := router.Group("/api/auth")
+	auth.Use(middleware.AuthRateLimit())
+	{
+		auth.POST("/register", appcontext.Wrap(handlers.RegisterAuth))
+		auth.POST("/login", appcontext.Wrap(handlers.LoginAuth))
+		auth.POST("/refresh", appcontext.Wrap(handlers.RefreshAuth))
+		auth.POST("/logout", appcontext.Wrap(handlers.LogoutAuth))
+	}
 
 	protected := router.Group("/api")
 	protected.Use(middleware.JWTAuthenticationFilter(jwtManager, userLookup, sessions))
@@ -61,7 +66,10 @@ func RegisterRoutes(router *gin.Engine, jwtManager *security.JWTManager, userLoo
 			adminOnly.PUT("/vulnerabilities/:id", appcontext.Wrap(handlers.UpdateVulnerability))
 			adminOnly.DELETE("/vulnerabilities/:id", appcontext.Wrap(handlers.DeleteVulnerability))
 
-			adminOnly.GET("/nvd/cves/:cveId", appcontext.Wrap(handlers.LookupCVE))
+			nvd := adminOnly.Group("/nvd", middleware.NVDLookupRateLimit())
+			{
+				nvd.GET("/cves/:cveId", appcontext.Wrap(handlers.LookupCVE))
+			}
 		}
 	}
 }

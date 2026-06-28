@@ -1,4 +1,4 @@
-package main
+package bootstrap
 
 import (
 	"context"
@@ -8,24 +8,24 @@ import (
 	"secureops/backend-go/api/config"
 )
 
-func TestRunBootstrapSkipsWhenDisabled(t *testing.T) {
+func TestRunSkipsWhenDisabled(t *testing.T) {
 	cfg := config.Config{
 		Environment:      "development",
 		BootstrapDevData: false,
 	}
 
-	if err := runBootstrap(context.Background(), nil, cfg); err != nil {
+	if err := Run(context.Background(), nil, cfg); err != nil {
 		t.Fatalf("expected disabled bootstrap to skip without error, got %v", err)
 	}
 }
 
-func TestRunBootstrapRejectsProduction(t *testing.T) {
+func TestRunRejectsProduction(t *testing.T) {
 	cfg := config.Config{
 		Environment:      "production",
 		BootstrapDevData: true,
 	}
 
-	err := runBootstrap(context.Background(), nil, cfg)
+	err := Run(context.Background(), nil, cfg)
 	if err == nil {
 		t.Fatal("expected production bootstrap to fail")
 	}
