@@ -2,6 +2,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -21,16 +22,26 @@ func TestAuthControllerHandlers(t *testing.T) {
 	controller := NewAuthController(svc)
 
 	t.Run("register", func(t *testing.T) {
-		ec := newAuthContext(t, http.MethodPost, "/auth/register", `{"username":"analyst","email":"analyst@example.com","password":"Password1!"}`)
+		ec, recorder := newAuthContext(t, http.MethodPost, "/auth/register", `{"username":"analyst","email":"analyst@example.com","password":"Password1!"}`)
 		ec.Request.Header.Set("Content-Type", "application/json")
 		controller.Register(ec)
 		if svc.registerCalls != 1 {
 			t.Fatal("expected Register to be called")
 		}
+		if recorder.Code != http.StatusCreated {
+			t.Fatalf("expected %d, got %d", http.StatusCreated, recorder.Code)
+		}
+		var response dto.UserResponse
+		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to decode register response: %v", err)
+		}
+		if response.ID != 1 || response.Username != "analyst" || response.Email != "analyst@example.com" {
+			t.Fatalf("unexpected register response: %#v", response)
+		}
 	})
 
 	t.Run("login", func(t *testing.T) {
-		ec := newAuthContext(t, http.MethodPost, "/auth/login", `{"userOrEmail":"analyst","password":"Password1!"}`)
+		ec, _ := newAuthContext(t, http.MethodPost, "/auth/login", `{"userOrEmail":"analyst","password":"Password1!"}`)
 		ec.Request.Header.Set("Content-Type", "application/json")
 		controller.Login(ec)
 		if svc.loginCalls != 1 {
@@ -39,7 +50,7 @@ func TestAuthControllerHandlers(t *testing.T) {
 	})
 
 	t.Run("refresh", func(t *testing.T) {
-		ec := newAuthContext(t, http.MethodPost, "/auth/refresh", `{"refreshToken":"refresh"}`)
+		ec, _ := newAuthContext(t, http.MethodPost, "/auth/refresh", `{"refreshToken":"refresh"}`)
 		ec.Request.Header.Set("Content-Type", "application/json")
 		controller.Refresh(ec)
 		if svc.refreshCalls != 1 {
@@ -48,7 +59,7 @@ func TestAuthControllerHandlers(t *testing.T) {
 	})
 
 	t.Run("logout", func(t *testing.T) {
-		ec := newAuthContext(t, http.MethodPost, "/auth/logout", `{"refreshToken":"refresh"}`)
+		ec, _ := newAuthContext(t, http.MethodPost, "/auth/logout", `{"refreshToken":"refresh"}`)
 		ec.Request.Header.Set("Content-Type", "application/json")
 		controller.Logout(ec)
 		if svc.logoutCalls != 1 {
@@ -58,16 +69,20 @@ func TestAuthControllerHandlers(t *testing.T) {
 }
 
 type fakeAuthService struct {
-	loginResponse dto.LoginResponse
-	registerCalls int
-	loginCalls    int
-	refreshCalls  int
-	logoutCalls   int
+	registerResponse dto.UserResponse
+	loginResponse    dto.LoginResponse
+	registerCalls    int
+	loginCalls       int
+	refreshCalls     int
+	logoutCalls      int
 }
 
-func (f *fakeAuthService) Register(ec *appcontext.GinContext, request dto.RegisterRequest) error {
+func (f *fakeAuthService) Register(ec *appcontext.GinContext, request dto.RegisterRequest) (dto.UserResponse, error) {
 	f.registerCalls++
-	return nil
+	if f.registerResponse == (dto.UserResponse{}) {
+		f.registerResponse = dto.UserResponse{ID: 1, Username: request.Username, Email: request.Email}
+	}
+	return f.registerResponse, nil
 }
 
 func (f *fakeAuthService) Login(ec *appcontext.GinContext, request dto.LoginRequest) (dto.LoginResponse, error) {
@@ -88,7 +103,7 @@ func (f *fakeAuthService) Logout(ec *appcontext.GinContext, request dto.RefreshR
 var _ baseservice.AuthService = (*fakeAuthService)(nil)
 
 // newAuthContext creates a test Gin context for auth controller tests.
-func newAuthContext(t *testing.T, method string, target string, body string) *appcontext.GinContext {
+func newAuthContext(t *testing.T, method string, target string, body string) (*appcontext.GinContext, *httptest.ResponseRecorder) {
 	t.Helper()
 
 	recorder := httptest.NewRecorder()
@@ -97,5 +112,5 @@ func newAuthContext(t *testing.T, method string, target string, body string) *ap
 	ctx.Request = req
 	ec := appcontext.NewGinContext(ctx, "txn-123", nil)
 	appcontext.SetGinContext(ctx, ec)
-	return ec
+	return ec, recorder
 }

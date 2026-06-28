@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -95,7 +95,7 @@ func newNVDServiceContext(t *testing.T, userID int64) *appcontext.GinContext {
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/", nil)
-	ec := appcontext.NewGinContext(ctx, "txn-123", log.New(io.Discard, "", 0))
+	ec := appcontext.NewGinContext(ctx, "txn-123", slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ec.SetUserID(userID)
 	appcontext.SetGinContext(ctx, ec)
 	return ec

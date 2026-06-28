@@ -4,7 +4,7 @@ package service
 import (
 	"errors"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -31,17 +31,21 @@ func TestAuthService(t *testing.T) {
 	svc := NewAuthService(security.NewJWTManager("test-secret", time.Hour, time.Hour*24, "issuer", "audience"), repo, &fakeRefreshSessionRepository{})
 	ctx := newAuthServiceContext(t)
 
-	if err := svc.Register(ctx, dto.RegisterRequest{Username: "analyst", Email: "analyst@example.com", Password: "Password1!"}); err != nil {
+	registerResponse, err := svc.Register(ctx, dto.RegisterRequest{Username: "analyst", Email: "analyst@example.com", Password: "Password1!"})
+	if err != nil {
 		t.Fatalf("expected Register to succeed, got %v", err)
 	}
-	response, err := svc.Login(ctx, dto.LoginRequest{UserOrEmail: "analyst", Password: "Password1!"})
+	if registerResponse.ID != 1 || registerResponse.Username != "analyst" || registerResponse.Email != "analyst@example.com" {
+		t.Fatalf("unexpected register response: %#v", registerResponse)
+	}
+	loginResponse, err := svc.Login(ctx, dto.LoginRequest{UserOrEmail: "analyst", Password: "Password1!"})
 	if err != nil {
 		t.Fatalf("expected Login to succeed, got %v", err)
 	}
-	if response.Token == "" {
+	if loginResponse.Token == "" {
 		t.Fatal("expected token to be populated")
 	}
-	if response.RefreshToken == "" {
+	if loginResponse.RefreshToken == "" {
 		t.Fatal("expected refresh token to be populated")
 	}
 }
@@ -69,7 +73,7 @@ func TestAuthServiceValidationAndTranslation(t *testing.T) {
 	ctx := newAuthServiceContext(t)
 	svc := NewAuthService(security.NewJWTManager("test-secret", time.Hour, time.Hour*24, "issuer", "audience"), &fakeUserRepository{findErr: gorm.ErrRecordNotFound}, &fakeRefreshSessionRepository{})
 
-	if err := svc.Register(ctx, dto.RegisterRequest{Username: "ab", Email: "bad", Password: "short"}); !errors.Is(err, baseservice.ErrInvalidRequestData) {
+	if _, err := svc.Register(ctx, dto.RegisterRequest{Username: "ab", Email: "bad", Password: "short"}); !errors.Is(err, baseservice.ErrInvalidRequestData) {
 		t.Fatalf("expected invalid request data, got %v", err)
 	}
 	if _, err := svc.Login(ctx, dto.LoginRequest{UserOrEmail: "missing", Password: "Password1!"}); !errors.Is(err, baseservice.ErrInvalidCredentials) {
@@ -145,7 +149,13 @@ func (f *fakeUserRepository) ExistsByEmail(ec *appcontext.GinContext, email stri
 }
 
 // Save accepts the fake user without error.
-func (f *fakeUserRepository) Save(ec *appcontext.GinContext, user model.User) error { return nil }
+func (f *fakeUserRepository) Save(ec *appcontext.GinContext, user model.User) (model.User, error) {
+	if user.ID == 0 {
+		user.ID = f.user.ID
+	}
+	f.user = user
+	return user, nil
+}
 
 // FindByUsernameOrEmail returns the configured fake user.
 func (f *fakeUserRepository) FindByUsernameOrEmail(ec *appcontext.GinContext, userOrEmail string) (model.User, error) {
@@ -200,7 +210,7 @@ func newAuthServiceContext(t *testing.T) *appcontext.GinContext {
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/", nil)
-	ec := appcontext.NewGinContext(ctx, "txn-123", log.New(io.Discard, "", 0))
+	ec := appcontext.NewGinContext(ctx, "txn-123", slog.New(slog.NewTextHandler(io.Discard, nil)))
 	appcontext.SetGinContext(ctx, ec)
 	return ec
 }

@@ -3,7 +3,7 @@ package context
 import (
 	stdcontext "context"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 
 func TestNewGinContextStoresRequestScopedValues(t *testing.T) {
 	ginCtx := newTestGinContext(t)
-	logger := log.New(io.Discard, "test: ", 0)
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	ctx := NewGinContext(ginCtx, "txn-123", logger)
 
@@ -37,7 +37,7 @@ func TestNewGinContextStoresRequestScopedValues(t *testing.T) {
 
 func TestSetGinContextAndFromGinContextReturnStoredContext(t *testing.T) {
 	ginCtx := newTestGinContext(t)
-	expected := NewGinContext(ginCtx, "txn-123", log.New(io.Discard, "", 0))
+	expected := NewGinContext(ginCtx, "txn-123", slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 	SetGinContext(ginCtx, expected)
 
@@ -91,7 +91,7 @@ func TestFromGinContextFallsBackWhenMissingOrWrongType(t *testing.T) {
 
 func TestWrapPassesGinContextToHandler(t *testing.T) {
 	ginCtx := newTestGinContext(t)
-	expected := NewGinContext(ginCtx, "txn-123", log.New(io.Discard, "", 0))
+	expected := NewGinContext(ginCtx, "txn-123", slog.New(slog.NewTextHandler(io.Discard, nil)))
 	SetGinContext(ginCtx, expected)
 
 	var actual *GinContext
@@ -108,7 +108,7 @@ func TestWrapPassesGinContextToHandler(t *testing.T) {
 
 func TestAuthenticatedUserValuesReturnExpectedTypesOnly(t *testing.T) {
 	ginCtx := newTestGinContext(t)
-	ctx := NewGinContext(ginCtx, "", log.New(io.Discard, "", 0))
+	ctx := NewGinContext(ginCtx, "", slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 	if ctx.UserID() != 0 {
 		t.Fatalf("expected missing user ID to return 0, got %d", ctx.UserID())
@@ -150,7 +150,7 @@ func TestAuthenticatedUserValuesReturnExpectedTypesOnly(t *testing.T) {
 }
 
 func TestDatabaseAccessors(t *testing.T) {
-	ctx := NewGinContext(newTestGinContext(t), "", log.New(io.Discard, "", 0))
+	ctx := NewGinContext(newTestGinContext(t), "", slog.New(slog.NewTextHandler(io.Discard, nil)))
 	database := &gorm.DB{}
 
 	if ctx.Database() != nil {
@@ -168,7 +168,7 @@ func TestRequestContextReturnsHTTPRequestContext(t *testing.T) {
 	requestCtx := stdcontext.WithValue(stdcontext.Background(), testRequestContextKey{}, "value")
 	request := httptest.NewRequest(http.MethodGet, "/resource", nil).WithContext(requestCtx)
 	ginCtx := newTestGinContextWithRequest(t, request)
-	ctx := NewGinContext(ginCtx, "", log.New(io.Discard, "", 0))
+	ctx := NewGinContext(ginCtx, "", slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 	actual := ctx.RequestContext()
 

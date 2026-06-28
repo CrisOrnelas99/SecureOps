@@ -28,7 +28,8 @@ func (c *AuthController) Register(ec *appcontext.GinContext) {
 		return
 	}
 
-	if err := c.authService.Register(ec, request); err != nil {
+	user, err := c.authService.Register(ec, request)
+	if err != nil {
 		if handleAuthServiceError(ec, err, "Error registering user") {
 			return
 		}
@@ -36,7 +37,7 @@ func (c *AuthController) Register(ec *appcontext.GinContext) {
 		return
 	}
 
-	ec.Status(http.StatusOK)
+	ec.JSON(http.StatusCreated, user)
 }
 
 // Login handles user authentication requests and returns credentials.

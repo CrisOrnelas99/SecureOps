@@ -189,6 +189,19 @@ Implementation note:
 * Refresh requests rotate the session and return a new token pair.
 * Logout revokes the refresh session and invalidates the paired access token on subsequent protected requests.
 
+## 2.5 Cloud deployment rules
+
+When the application is deployed to AWS or another cloud provider, keep these rules:
+
+* Terminate HTTPS with a trusted certificate at the load balancer or server boundary.
+* Keep databases private; do not expose RDS or equivalent databases publicly.
+* Store secrets in managed secret storage such as AWS Secrets Manager or SSM Parameter Store.
+* Limit IAM permissions to the minimum set of resources and actions required.
+* Expose only the public edge such as an ALB; keep backend and database services on private networking.
+* Send logs to a managed logging service such as CloudWatch without secrets.
+* Preserve server-side authorization, validation, and session checks exactly as in local deployments.
+* Prefer structured logs for audit and request events so security fields can be filtered without exposing payloads.
+
 ---
 
 # 3. OWASP Top 10:2025 Requirements

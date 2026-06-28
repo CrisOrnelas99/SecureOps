@@ -4,7 +4,7 @@ package controller
 import (
 	"encoding/json"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -91,7 +91,7 @@ func newNVDControllerContext(t *testing.T, cveID string) (*appcontext.GinContext
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/nvd/cves/"+cveID, nil)
 	ctx.Params = gin.Params{{Key: "cveId", Value: cveID}}
-	ec := appcontext.NewGinContext(ctx, "txn-123", log.New(io.Discard, "", 0))
+	ec := appcontext.NewGinContext(ctx, "txn-123", slog.New(slog.NewTextHandler(io.Discard, nil)))
 	appcontext.SetGinContext(ctx, ec)
 	return ec, recorder
 }

@@ -8,7 +8,7 @@ package context
 
 import (
 	stdcontext "context"
-	"log"
+	"log/slog"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -24,12 +24,12 @@ const (
 type GinContext struct {
 	*gin.Context
 	transactionID string
-	logger        *log.Logger
+	logger        *slog.Logger
 	database      *gorm.DB
 }
 
 // NewGinContext creates a new request-scoped GinContext wrapper.
-func NewGinContext(ctx *gin.Context, transactionID string, logger *log.Logger) *GinContext {
+func NewGinContext(ctx *gin.Context, transactionID string, logger *slog.Logger) *GinContext {
 	return &GinContext{
 		Context:       ctx,
 		transactionID: transactionID,
@@ -47,12 +47,12 @@ func SetGinContext(ctx *gin.Context, ec *GinContext) {
 func FromGinContext(ctx *gin.Context) *GinContext {
 	value, exists := ctx.Get(ginContextKey)
 	if !exists {
-		return NewGinContext(ctx, "", log.Default())
+		return NewGinContext(ctx, "", slog.Default())
 	}
 
 	ec, ok := value.(*GinContext)
 	if !ok {
-		return NewGinContext(ctx, "", log.Default())
+		return NewGinContext(ctx, "", slog.Default())
 	}
 
 	return ec
@@ -131,7 +131,10 @@ func (ec *GinContext) TransactionID() string {
 }
 
 // Logger returns the request-scoped logger.
-func (ec *GinContext) Logger() *log.Logger {
+func (ec *GinContext) Logger() *slog.Logger {
+	if ec.logger == nil {
+		return slog.Default()
+	}
 	return ec.logger
 }
 

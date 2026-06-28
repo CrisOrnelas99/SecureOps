@@ -12,8 +12,8 @@ type UserRepository interface {
 	ExistsByUsername(ec *appcontext.GinContext, username string) (bool, error)
 	// ExistsByEmail checks whether an email address is already registered.
 	ExistsByEmail(ec *appcontext.GinContext, email string) (bool, error)
-	// Save persists a new user record.
-	Save(ec *appcontext.GinContext, user model.User) error
+	// Save persists a new user record and returns the stored entity.
+	Save(ec *appcontext.GinContext, user model.User) (model.User, error)
 	// FindByUsernameOrEmail returns a user by username or email.
 	FindByUsernameOrEmail(ec *appcontext.GinContext, userOrEmail string) (model.User, error)
 	// FindByUsername returns a user by username.

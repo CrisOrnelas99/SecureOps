@@ -1,6 +1,6 @@
 info:
-  name: Setup
+  name: Non-Admin Setup
   type: folder
-  seq: 1
+  seq: 2
 
 request: {}

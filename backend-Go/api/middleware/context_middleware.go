@@ -6,7 +6,7 @@ package middleware
 import (
 	"crypto/rand"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -20,14 +20,16 @@ import (
 func RequestContext() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		transactionID := newTransactionID()
-		logger := log.New(os.Stdout, fmt.Sprintf("transaction_id=%s ", transactionID), log.LstdFlags)
+		logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})).With(
+			"request_id", transactionID,
+		)
 
 		appcontext.SetGinContext(ctx, appcontext.NewGinContext(ctx, transactionID, logger))
-		logger.Printf("request started method=%s path=%s", ctx.Request.Method, ctx.Request.URL.Path)
+		logger.Info("request started", "method", ctx.Request.Method, "path", ctx.Request.URL.Path)
 
 		ctx.Next()
 
-		logger.Printf("request completed status=%d", ctx.Writer.Status())
+		logger.Info("request completed", "status", ctx.Writer.Status())
 	}
 }
 

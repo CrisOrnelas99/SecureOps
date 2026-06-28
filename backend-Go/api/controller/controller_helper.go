@@ -49,7 +49,7 @@ func HandleError(ec *appcontext.GinContext, status int, err error, message strin
 		return false
 	}
 
-	ec.Logger().Printf("request error status=%d error=%v message=%q", status, err, message)
+	ec.Logger().Error("request error", "status", status, "error", err, "message", message)
 	ec.JSON(status, dto.ErrorResponse{
 		Code:      errorCode(status),
 		Message:   message,

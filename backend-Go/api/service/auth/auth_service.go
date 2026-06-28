@@ -33,39 +33,44 @@ func NewAuthService(jwtManager *security.JWTManager, userRepository basereposito
 }
 
 // Register validates and creates a new user account.
-func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.RegisterRequest) error {
+func (s *authServiceImpl) Register(ec *appcontext.GinContext, request dto.RegisterRequest) (dto.UserResponse, error) {
 	request = baseservice.NormalizeRegisterRequest(request)
 	if err := baseservice.ValidateRegisterRequest(request); err != nil {
-		return err
+		return dto.UserResponse{}, err
 	}
 
 	exists, err := s.userRepository.ExistsByUsername(ec, request.Username)
 	if err != nil {
-		return baseservice.TranslateRepositoryError(err)
+		return dto.UserResponse{}, baseservice.TranslateRepositoryError(err)
 	}
 	if exists {
-		return baseservice.ErrConflict
+		return dto.UserResponse{}, baseservice.ErrConflict
 	}
 
 	exists, err = s.userRepository.ExistsByEmail(ec, request.Email)
 	if err != nil {
-		return baseservice.TranslateRepositoryError(err)
+		return dto.UserResponse{}, baseservice.TranslateRepositoryError(err)
 	}
 	if exists {
-		return baseservice.ErrConflict
+		return dto.UserResponse{}, baseservice.ErrConflict
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), config.PasswordCost())
 	if err != nil {
-		return err
+		return dto.UserResponse{}, err
 	}
 
-	return baseservice.TranslateRepositoryError(s.userRepository.Save(ec, model.User{
+	user, err := s.userRepository.Save(ec, model.User{
 		Username:     request.Username,
 		Email:        request.Email,
 		Role:         model.RoleUser,
 		PasswordHash: string(hash),
-	}))
+	})
+	if err != nil {
+		return dto.UserResponse{}, baseservice.TranslateRepositoryError(err)
+	}
+
+	return dto.ToUserResponse(user), nil
 }
 
 // Login validates credentials and returns a signed access token.

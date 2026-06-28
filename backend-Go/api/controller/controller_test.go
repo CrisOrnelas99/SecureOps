@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -249,8 +249,8 @@ func (f *fakeRefreshSessionLookup) FindActiveByTokenIDForUser(ec *appcontext.Gin
 type fakeAuthService struct{}
 
 // Register simulates a successful auth registration.
-func (f *fakeAuthService) Register(ec *appcontext.GinContext, request dto.RegisterRequest) error {
-	return nil
+func (f *fakeAuthService) Register(ec *appcontext.GinContext, request dto.RegisterRequest) (dto.UserResponse, error) {
+	return dto.UserResponse{ID: 1, Username: request.Username, Email: request.Email}, nil
 }
 
 // Login simulates a successful auth login.
@@ -362,7 +362,7 @@ func newControllerContext(t *testing.T, method string, target string, body strin
 	if body == "" {
 		ctx.Request.Body = http.NoBody
 	}
-	ec := appcontext.NewGinContext(ctx, "txn-123", log.New(io.Discard, "", 0))
+	ec := appcontext.NewGinContext(ctx, "txn-123", slog.New(slog.NewTextHandler(io.Discard, nil)))
 	appcontext.SetGinContext(ctx, ec)
 	return ec, recorder
 }

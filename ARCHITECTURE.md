@@ -15,6 +15,8 @@ SecureOps is a cybersecurity asset-risk platform built around:
 - NVD / NIST vulnerability data
 - AI-assisted asset ingestion planned behind the backend
 - focused Go services for limited background tasks
+- HTTPS/TLS termination at the deployment boundary with server-side certificate handling
+- future AWS deployment can host the backend, database, certificates, logging, and scheduled jobs through managed services
 
 The backend is the trust boundary. Angular never talks directly to NVD, AI providers, or internal services.
 
@@ -24,6 +26,8 @@ The backend is the trust boundary. Angular never talks directly to NVD, AI provi
 - API: Go backend in `backend-Go/`
 - Database: PostgreSQL
 - Local orchestration: Docker Compose
+- Secure deployments should terminate TLS in a reverse proxy or in the Go backend, but certificates stay server-side
+- AWS is a later deployment layer, not a replacement for the backend trust boundary
 
 ## Backend Responsibilities
 
@@ -37,7 +41,9 @@ The Go backend owns:
 - vulnerability CRUD
 - asset-to-vulnerability assignment
 - NVD lookup and local vulnerability persistence
+- structured request logging and security logging
 - safe error handling and input validation
+- cloud deployment compatibility for managed services such as ECR, ECS/Fargate, RDS, ALB/ACM, CloudWatch, Secrets Manager, and EventBridge
 
 ## Auth Model
 
@@ -50,6 +56,7 @@ Important notes:
 - logout revokes the stored session
 - protected requests check both the access token and the active session state
 - login resolves `userOrEmail` by shape: email-like values use email lookup, everything else uses username lookup
+- outbound TLS verification remains enabled for external API calls such as NVD
 
 ### Flow Summary
 
@@ -167,4 +174,3 @@ Key current rules:
 - use backend validation and authorization
 - keep NVD and AI calls server-side
 - store imported vulnerability data locally
-

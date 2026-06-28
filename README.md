@@ -100,7 +100,7 @@ Future work documented in `ARCHITECTURE.md` and `Roadmap.md` includes:
 - alerting and CVE refresh services
 - dashboard analytics and risk trend reporting
 - full Docker integration for frontend, backend, and services
-- later AWS/cloud integration
+- later AWS deployment foundation using ECR, ECS/Fargate or EC2, RDS, ALB/ACM, Secrets Manager, CloudWatch, and EventBridge
 
 ## Repository Layout
 

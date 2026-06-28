@@ -1,7 +1,7 @@
 opencollection: 1.0.0
 
 info:
-  name: API/Tests
+  name: api_tests
 config:
   proxy:
     inherit: true
@@ -17,11 +17,10 @@ config:
 request:
   auth:
     type: bearer
-    token: "{{token}}"
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZSI6ImFwaSIsInRva2VuVXNlIjoiYWNjZXNzIiwiaXNzIjoic2VjdXJlb3BzIiwic3ViIjoic3lzdGVtX2FkbWluIiwiYXVkIjpbInNlY3VyZW9wcy1hcGkiXSwiZXhwIjoxNzgyNjE3NTU3LCJpYXQiOjE3ODI2MTM5NTcsImp0aSI6IjdiMDY0MTFlNTYyNWQxNzJjMjM4YmY2ZWE3MDFjNjFiIn0.d80JTQ_O_vN92BAMnHaAflZe487OoL4nWnwq-POsCYk
 bundled: false
 extensions:
   bruno:
     ignore:
       - node_modules
       - .git
-​

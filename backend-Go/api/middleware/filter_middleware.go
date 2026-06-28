@@ -3,11 +3,12 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
+	appcontext "secureops/backend-go/api/context"
 )
 
 // RequestFilter blocks suspicious requests that match common attack patterns.
@@ -28,7 +29,12 @@ func RequestFilter() gin.HandlerFunc {
 		}
 
 		if reason != "" {
-			log.Printf("Blocked suspicious request: method=%s path=%s reason=%s source_ip=%s", c.Request.Method, c.Request.URL.Path, reason, c.ClientIP())
+			appcontext.FromGinContext(c).Logger().Warn("blocked suspicious request",
+				"method", c.Request.Method,
+				"path", c.Request.URL.Path,
+				"reason", reason,
+				"source_ip", c.ClientIP(),
+			)
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": ErrSuspiciousRequest.Message})
 			return
 		}

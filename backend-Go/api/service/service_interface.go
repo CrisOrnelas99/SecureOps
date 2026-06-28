@@ -10,7 +10,7 @@ import (
 // AuthService defines the operations required for authentication flows.
 type AuthService interface {
 	// Register creates a new user account using the supplied registration request.
-	Register(ec *appcontext.GinContext, request dto.RegisterRequest) error
+	Register(ec *appcontext.GinContext, request dto.RegisterRequest) (dto.UserResponse, error)
 	// Login authenticates the user and returns a login response containing a JWT.
 	Login(ec *appcontext.GinContext, request dto.LoginRequest) (dto.LoginResponse, error)
 	// Refresh exchanges a refresh token for new access credentials.

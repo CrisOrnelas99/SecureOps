@@ -52,9 +52,9 @@ func (r *UserRepository) ExistsByEmail(ec *appcontext.GinContext, email string) 
 }
 
 // Save creates a new user record.
-func (r *UserRepository) Save(ec *appcontext.GinContext, user model.User) error {
+func (r *UserRepository) Save(ec *appcontext.GinContext, user model.User) (model.User, error) {
 	if user.Username == "" || user.Email == "" || user.PasswordHash == "" {
-		return baserepository.ErrInvalidData
+		return model.User{}, baserepository.ErrInvalidData
 	}
 
 	for attempt := 0; attempt < 3; attempt++ {
@@ -64,7 +64,7 @@ func (r *UserRepository) Save(ec *appcontext.GinContext, user model.User) error 
 
 		err := r.dbForContext(ec).WithContext(ec.RequestContext()).Create(&user).Error
 		if err == nil {
-			return nil
+			return user, nil
 		}
 
 		databaseErr := utils.TranslateDatabaseError(err)
@@ -72,18 +72,18 @@ func (r *UserRepository) Save(ec *appcontext.GinContext, user model.User) error 
 			continue
 		}
 		if errors.Is(databaseErr, utils.ErrUniqueViolation) {
-			return fmt.Errorf("%w: %w", baserepository.ErrDuplicateData, databaseErr)
+			return model.User{}, fmt.Errorf("%w: %w", baserepository.ErrDuplicateData, databaseErr)
 		}
 		if errors.Is(databaseErr, utils.ErrForeignKeyViolation) {
-			return fmt.Errorf("%w: %w", baserepository.ErrInvalidReference, databaseErr)
+			return model.User{}, fmt.Errorf("%w: %w", baserepository.ErrInvalidReference, databaseErr)
 		}
 		if errors.Is(databaseErr, utils.ErrCheckConstraintViolation) {
-			return fmt.Errorf("%w: %w", baserepository.ErrInvalidData, databaseErr)
+			return model.User{}, fmt.Errorf("%w: %w", baserepository.ErrInvalidData, databaseErr)
 		}
-		return fmt.Errorf("%w: %w", baserepository.ErrCreateFailed, databaseErr)
+		return model.User{}, fmt.Errorf("%w: %w", baserepository.ErrCreateFailed, databaseErr)
 	}
 
-	return fmt.Errorf("%w: exhausted random id retries", baserepository.ErrCreateFailed)
+	return model.User{}, fmt.Errorf("%w: exhausted random id retries", baserepository.ErrCreateFailed)
 }
 
 // FindByUsernameOrEmail returns a user that matches the supplied username or email.
